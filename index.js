@@ -226,17 +226,17 @@ function resetStats() {
   x2 = windowWidth;
   y2 = windowHeight;
   // PLAYERHEALTH = 1;
-  PLAYERHEALTH = 100;
-  // PLAYERHEALTH = 100000;
+  // PLAYERHEALTH = 100;
+  PLAYERHEALTH = 100000;
   PLAYERMAXHEALTH = 100;
   // PLAYERMAXHEALTH = 100000;
   SCORE = 0;
   EXPPOINTS = 10;
   // EXPPOINTS = 29;
   LVL = 1;
-  TIME = 1;
+  // TIME = 1;
   // TIME = 25;
-  // TIME = 600;
+  TIME = 600;
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
   SWORDDAMAGE = 1040;
@@ -718,34 +718,34 @@ window.draw = () => {
     }
   }
   clear();
-  image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
-  image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
-  image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
-  image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
-  image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
-  // image(FIREIMG, 0, 10, 20, 50);
-  fill(65, 65, 65, TIME / 1.5 - PLAYERHEALTH * 2);
+  fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
-  if (x1 < -windowWidth){
-    x1 = windowWidth;
-  } else if (x1 > windowWidth) {
-    x1 = -windowWidth;
-  }
-  if (x2 < -windowWidth){
-    x2 = windowWidth;
-  } else if (x2 > windowWidth) {
-    x2 = -windowWidth;
-  }
-  if (y1 < -windowHeight){
-    y1 = windowHeight;
-  } else if (y1 > windowHeight) {
-    y1 = -windowHeight;
-  }
-  if (y2 < -windowHeight){
-    y2 = windowHeight;
-  } else if (y2 > windowHeight) {
-    y2 = -windowHeight;
-  }
+  // image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
+  // image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
+  // image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
+  // image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
+  // image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
+  // // image(FIREIMG, 0, 10, 20, 50);
+  // if (x1 < -windowWidth){
+  //   x1 = windowWidth;
+  // } else if (x1 > windowWidth) {
+  //   x1 = -windowWidth;
+  // }
+  // if (x2 < -windowWidth){
+  //   x2 = windowWidth;
+  // } else if (x2 > windowWidth) {
+  //   x2 = -windowWidth;
+  // }
+  // if (y1 < -windowHeight){
+  //   y1 = windowHeight;
+  // } else if (y1 > windowHeight) {
+  //   y1 = -windowHeight;
+  // }
+  // if (y2 < -windowHeight){
+  //   y2 = windowHeight;
+  // } else if (y2 > windowHeight) {
+  //   y2 = -windowHeight;
+  // }
   if (frameCount % 200 === 0 && TIME > 20) {
     for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 15000000; i++) {
       if (ENEMIES.length < Math.pow(windowWidth, 2) / 13000) {
@@ -876,6 +876,12 @@ window.draw = () => {
       EARTH[i - 1].x = PLAYER.x + 150 * circularx;
       EARTH[i - 1].y = PLAYER.y + 150 * circulary;
     }
+  }
+  while (EXP.length > 200) {
+    EXP[0].remove();
+    // find a way to fix performance
+    // also random pausing when upgrading
+    // expCollect(EXP = EXP[0]);
   }
   if (AIRON) {
     AIR.x = constrain(AIR.x, PLAYER.x - windowWidth / 2, PLAYER.x + windowWidth / 2);

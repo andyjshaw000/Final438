@@ -1,9 +1,11 @@
+let DEBUG = true;
 let WEAPONCHOSEN;
 let CHOSEORBS;
 let CHOSESWORD;
 let SWORDDAMAGE;
 let BG;
 let MOUSEIMG;
+let WASDIMG;
 let x1;
 let y1;
 let x2;
@@ -137,6 +139,7 @@ window.setup = () => {
 };
 
 function initialize() {
+  noSmooth();
   let pause = createButton("Pause");
   pause.style("border-radius", windowWidth / 220 + "px");
   pause.style("font-size", windowWidth / 120 + "px");
@@ -175,6 +178,7 @@ function initialize() {
   let imagenumber = Math.ceil(Math.random() * 4);
   BG = loadImage("images/" + imagenumber + "-min.jpg");
   MOUSEIMG = loadImage("images/mouse.png");
+  WASDIMG = loadImage("images/wasd.png");
 }
 
 function backgroundmusic() {
@@ -225,18 +229,19 @@ function resetStats() {
   y1 = 0;
   x2 = windowWidth;
   y2 = windowHeight;
-  // PLAYERHEALTH = 1;
-  // PLAYERHEALTH = 100;
-  PLAYERHEALTH = 100000;
+  PLAYERHEALTH = 100;
   PLAYERMAXHEALTH = 100;
-  // PLAYERMAXHEALTH = 100000;
   SCORE = 0;
   EXPPOINTS = 10;
-  // EXPPOINTS = 29;
   LVL = 1;
-  // TIME = 1;
+  TIME = 1;
   // TIME = 25;
-  TIME = 600;
+  if (DEBUG) {
+    PLAYERHEALTH = 100000;
+    PLAYERMAXHEALTH = 100000;
+    EXPPOINTS = 29;
+    TIME = 600;
+  }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
   SWORDDAMAGE = 1040;
@@ -724,7 +729,8 @@ window.draw = () => {
   // image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
   // image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
   // image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
-  // image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
+  image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
+  image(WASDIMG, 15, 17 * windowHeight / 20, 35, 35);
   // // image(FIREIMG, 0, 10, 20, 50);
   // if (x1 < -windowWidth){
   //   x1 = windowWidth;
@@ -863,7 +869,8 @@ window.draw = () => {
   minutes = minutes < 10 ? "0" + minutes : minutes;
   extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
   text("Time: " + minutes + ":" + extraSeconds, 80, windowHeight / 20);
-  text("   : Attack", 80, windowHeight * 19 / 20);
+  text("   : Move", 80, windowHeight * 17.75 / 20);
+  text("     : Attack", 80, windowHeight * 19 / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   textFont("Arial");

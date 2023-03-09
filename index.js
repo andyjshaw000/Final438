@@ -176,7 +176,9 @@ function initialize() {
   overlapCheck();
   backgroundmusic();
   let imagenumber = Math.ceil(Math.random() * 4);
-  BG = loadImage("images/" + imagenumber + "-min.jpg");
+  // BG = loadImage("images/" + imagenumber + "-min.jpg");
+  BG = loadImage("images/tile" + imagenumber + ".jpeg");
+  // BG = loadImage("images/tile.jpeg");
   MOUSEIMG = loadImage("images/mouse.png");
   WASDIMG = loadImage("images/wasd.png");
 }
@@ -241,6 +243,7 @@ function resetStats() {
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     TIME = 600;
+    // console.log(getFrameRate());
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
@@ -411,6 +414,7 @@ function expCollect(PLAYER, EXP) {
   EXP.remove();
   EXPPOINTS += 1;
   checkLevel();
+  // loop();
 }
 
 function bombCollect(PLAYER, bomb) {
@@ -723,35 +727,35 @@ window.draw = () => {
     }
   }
   clear();
-  fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
-  rect(0, 0, windowWidth, windowHeight);
-  // image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
-  // image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
-  // image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
-  // image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
+  image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
+  image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
+  image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
+  image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
   image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
   image(WASDIMG, 15, 17 * windowHeight / 20, 35, 35);
+  fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
+  rect(0, 0, windowWidth, windowHeight);
   // // image(FIREIMG, 0, 10, 20, 50);
-  // if (x1 < -windowWidth){
-  //   x1 = windowWidth;
-  // } else if (x1 > windowWidth) {
-  //   x1 = -windowWidth;
-  // }
-  // if (x2 < -windowWidth){
-  //   x2 = windowWidth;
-  // } else if (x2 > windowWidth) {
-  //   x2 = -windowWidth;
-  // }
-  // if (y1 < -windowHeight){
-  //   y1 = windowHeight;
-  // } else if (y1 > windowHeight) {
-  //   y1 = -windowHeight;
-  // }
-  // if (y2 < -windowHeight){
-  //   y2 = windowHeight;
-  // } else if (y2 > windowHeight) {
-  //   y2 = -windowHeight;
-  // }
+  if (x1 < -windowWidth){
+    x1 = windowWidth;
+  } else if (x1 > windowWidth) {
+    x1 = -windowWidth;
+  }
+  if (x2 < -windowWidth){
+    x2 = windowWidth;
+  } else if (x2 > windowWidth) {
+    x2 = -windowWidth;
+  }
+  if (y1 < -windowHeight){
+    y1 = windowHeight;
+  } else if (y1 > windowHeight) {
+    y1 = -windowHeight;
+  }
+  if (y2 < -windowHeight){
+    y2 = windowHeight;
+  } else if (y2 > windowHeight) {
+    y2 = -windowHeight;
+  }
   if (frameCount % 200 === 0 && TIME > 20) {
     for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 15000000; i++) {
       if (ENEMIES.length < Math.pow(windowWidth, 2) / 13000) {
@@ -930,5 +934,11 @@ window.draw = () => {
     UPGRADESOUND.play();
     UPGRADESOUND.setVolume(.1);
     chooseWeapon();
+  }
+  if (DEBUG) {
+    text("Frame Rate: " + Math.floor(getFrameRate()), windowWidth - 340, windowHeight / 20);
+    text("Enemies: " + ENEMIES.length, windowWidth - 640, windowHeight / 20);
+    text("EXP: " + EXP.length, windowWidth - 940, windowHeight / 20);
+    text("All Sprites: " + allSprites.length, windowWidth - 1240, windowHeight / 20);
   }
 };

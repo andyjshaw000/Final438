@@ -1,4 +1,4 @@
-let DEBUG = true;
+let DEBUG = false;
 let WEAPONCHOSEN;
 let CHOSEORBS;
 let CHOSESWORD;
@@ -149,7 +149,7 @@ function initialize() {
   pause.mousePressed(() => {
     if (!PAUSED) {
       pause.html("Play");
-      console.log("paused");
+      // console.log("paused");
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
@@ -265,7 +265,7 @@ function resetStats() {
 }
 
 function chooseWeapon() {
-  console.log("choose weapon");
+  // console.log("choose weapon");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -512,7 +512,7 @@ function checkLevel() {
 }
 
 function generateUpgrades() {
-  console.log("upgrade");
+  // console.log("upgrade");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -615,7 +615,12 @@ function generateUpgrades() {
       WATERLVLUPSOUND.setVolume(.2);
     }
     startTime();
+    // while (!isLooping()) {
+    // noLoop();
+    //  VV something wrong with loop
     loop();
+    // }
+    // console.log(loop());
     let buttons = selectAll("button");
     for (let i = 1; i < buttons.length; i++) {
       buttons[i].remove();
@@ -685,7 +690,7 @@ window.windowResized = () => {
 
 window.draw = () => {
   if (PLAYERHEALTH <= 0) {
-    console.log("dead");
+    // console.log("dead");
     noLoop();
     clearInterval(TIMERID);
     BGMUSIC.stop();

@@ -149,6 +149,7 @@ function initialize() {
   pause.mousePressed(() => {
     if (!PAUSED) {
       pause.html("Play");
+      console.log("paused");
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
@@ -264,6 +265,7 @@ function resetStats() {
 }
 
 function chooseWeapon() {
+  console.log("choose weapon");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -293,12 +295,12 @@ function chooseWeapon() {
       } else if (button.attribute === "Select Sun Sword") {
         CHOSESWORD = true;
       }
+      startTime();
+      loop();
       let buttons = selectAll("button");
       for (let i = 1; i < buttons.length; i++) {
         buttons[i].remove();
       }
-      startTime();
-      loop();
     });
   }
 }
@@ -510,6 +512,7 @@ function checkLevel() {
 }
 
 function generateUpgrades() {
+  console.log("upgrade");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -611,12 +614,12 @@ function generateUpgrades() {
       WATERLVLUPSOUND.play();
       WATERLVLUPSOUND.setVolume(.2);
     }
+    startTime();
+    loop();
     let buttons = selectAll("button");
     for (let i = 1; i < buttons.length; i++) {
       buttons[i].remove();
     }
-    startTime();
-    loop();
   });
 
   }
@@ -682,6 +685,7 @@ window.windowResized = () => {
 
 window.draw = () => {
   if (PLAYERHEALTH <= 0) {
+    console.log("dead");
     noLoop();
     clearInterval(TIMERID);
     BGMUSIC.stop();

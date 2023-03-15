@@ -68,6 +68,7 @@ let WATERIMG;
 let AIRIMG;
 let EARTHIMG;
 let ORBIMG;
+let SHADOWORBIMG;
 let SWORDIMG_L;
 let SWORDIMG_R;
 let SWORDIMG_U;
@@ -104,6 +105,7 @@ function preload() {
   AIRIMG = loadAnimation("images/air.png");
   EARTHIMG = loadAnimation("images/earth.png");
   ORBIMG = loadAnimation("images/sun.png");
+  SHADOWORBIMG = loadAnimation("images/shadoworb.png");
   SWORDIMG_L = loadAnimation("images/sword2.png");
   SWORDIMG_R = loadAnimation("images/sword.png");
   SWORDIMG_U = loadAnimation("images/sword3.png");
@@ -204,6 +206,7 @@ function visualInit() {
   AIR.addAnimation("AIRIMG", AIRIMG);
   EARTH.addAnimation("EARTHIMG", EARTHIMG);
   FIRE.addAnimation("FIREIMG", FIREIMG);
+  SHADOWORBS.addAnimation("SHADOWORBIMG", SHADOWORBIMG);
   ORBS.addAnimation("ORBIMG", ORBIMG);
   SWORDS.addAnimation("SWORDIMG_L", SWORDIMG_L);
   SWORDIMG_L.offset.x = -45;
@@ -804,8 +807,8 @@ window.draw = () => {
     y2 = -windowHeight;
   }
   if (frameCount % 230 === 0 && TIME > 20) {
-    for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 18000000; i++) {
-      if (ENEMIES.length < Math.pow(windowWidth, 2) / 17000) {
+    for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 20000000; i++) {
+      if (ENEMIES.length < Math.pow(windowWidth, 2) / 20000) {
         spawnEnemy();
       }
     }
@@ -817,7 +820,7 @@ window.draw = () => {
     }
     let enemydirection = Math.atan2(PLAYER.y - ENEMIES[i].y, PLAYER.x - ENEMIES[i].x) * 180 / Math.PI;
     ENEMIES[i].direction = enemydirection;
-    ENEMIES[i].speed = 2 + TIME / 200;
+    ENEMIES[i].speed = 2 + TIME / 250;
     if (ENEMIES[i].x < PLAYER.x) {
       ENEMIES[i].ani = "ENEMYRIGHTIMG";
     } else {
@@ -825,17 +828,17 @@ window.draw = () => {
     }
     ENEMIES[i].life += 1;
     if (ENEMIES[i].drag === -1) {
-      ENEMIES[i].speed = .25 * (2 + TIME / 200);
+      ENEMIES[i].speed = .25 * (2 + TIME / 250);
       ENEMIES[i].drag = 0;
     } else if (ENEMIES[i].drag === -2) {
-      ENEMIES[i].speed = .75 * (2 + TIME / 200);
+      ENEMIES[i].speed = .75 * (2 + TIME / 250);
     }
   }
   for (let i = 0; i < SHOOTENEMIES.length; i++) {
     if (frameCount % 360 === 0) {
       let shadoworb = new SHADOWORBS.Sprite(SHOOTENEMIES[i].x, SHOOTENEMIES[i].y, 15, 15);
       shadoworb.moveTowards(PLAYER.x, PLAYER.y);
-      shadoworb.speed = 4;
+      shadoworb.speed = TIME / 60;
     }
     // SHOOTENEMIES[i].speed = .25 * (2.5 + TIME / 300);
     SHOOTENEMIES[i].speed = 2 + TIME / 800;
@@ -977,7 +980,7 @@ window.draw = () => {
       let fireball = new FIRE.Sprite();
       fireball.x = PLAYER.x;
       fireball.y = PLAYER.y;
-      fireball.speed = 40;
+      fireball.speed = 20;
       let spacing = (i * 2 * Math.PI / FIRECT) + Math.PI / 2;
       fireball.moveTowards(PLAYER.x + 200 * Math.cos(spacing), PLAYER.y + 200 * Math.sin(spacing));
       if (FIRE[i].x > PLAYER.x + 2 * windowWidth / 3 || FIRE[i].y > PLAYER.y + 2 * windowHeight / 3 || FIRE[i].x < PLAYER.x - 2 * windowWidth / 3 || FIRE[i].y < PLAYER.y - 2 * windowHeight / 3) {

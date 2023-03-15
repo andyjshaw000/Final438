@@ -1,43 +1,49 @@
-// import { initializeApp } from "firebase/app";
-// import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, getDocFromCache, limit} from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, getDocFromCache, limit} from "firebase/firestore";
 
-// const firebaseConfig = {
-//   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
-//   authDomain: "finalgame-d1901.firebaseapp.com",
-//   projectId: "finalgame-d1901",
-//   storageBucket: "finalgame-d1901.appspot.com",
-//   messagingSenderId: "713369379883",
-//   appId: "1:713369379883:web:9f486572415a15c167766e"
-// };
+const firebaseConfig = {
+  apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
+  authDomain: "finalgame-d1901.firebaseapp.com",
+  projectId: "finalgame-d1901",
+  storageBucket: "finalgame-d1901.appspot.com",
+  messagingSenderId: "713369379883",
+  appId: "1:713369379883:web:9f486572415a15c167766e"
+};
 
-// const app = initializeApp(firebaseConfig);
-// const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// async function sendScore(username) {
-//   try {
-//       const docRef = await addDoc(collection(db, "players"), {
-//         username: username,
-//         score: SCORE,
-//       });
-//       console.log("Document written with ID: ", docRef.id);
-//   } catch (e) {
-//       console.error("Error adding document: ", e);
-//   }
-// }
+async function sendScore(username) {
+  try {
+      const docRef = await addDoc(collection(db, "players"), {
+        username: username,
+        score: SCORE,
+      });
+      // console.log("Document written with ID: ", docRef.id);
+      id("submit-button").disabled = true;
+  } catch (e) {
+      // console.error("Error adding document: ", e);
+  }
+}
 
-// async function getScore() {
-//   const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
-//   const querySnapshot = await getDocs(q);
-//   const data = {allScores: []};
-//   querySnapshot.forEach((doc) => {
-//       data.allScores.push(doc.data());
-//   });
-//   let leaderboard = id("LB-list");
-//   data.allScores.forEach(({username, score}) => {
-//       let li = createLi(username, score);
-//       leaderboard.appendChild(li);
-//   });
-// }
+async function getScore() {
+  const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
+  const querySnapshot = await getDocs(q);
+  const data = {allScores: []};
+  querySnapshot.forEach((doc) => {
+      data.allScores.push(doc.data());
+  });
+  // let leaderboard = id("LB-list");
+  // data.allScores.forEach(({username, score}) => {
+  //     let li = createLi(username, score);
+  //     leaderboard.appendChild(li);
+  // });
+  let leaderboard = id("LB-list");
+  data.allScores.forEach(({username, score}) => {
+      let li = createLi(username, score);
+      leaderboard.appendChild(li);
+  });
+}
 
 let DEBUG = true;
 let BOSSSTART;
@@ -89,6 +95,7 @@ let WATERFIELDDAMAGE;
 let BOUNCERDAMAGE;
 let ROTATORDAMAGE;
 let BGMUSIC;
+let BOSSMUSIC;
 let BOMBSOUND;
 let HEALTHSOUND;
 let EXPERIENCESOUND;
@@ -140,42 +147,25 @@ let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massi
 
 p5.disableFriendlyErrors = true;
 
-// function createLi(name, score){
-//   let li = document.createElement("li");
-//   li.innerHTML = name + " : " + score;
-//   return li;
-// }
+function createLi(name, score){
+  let li = document.createElement("li");
+  li.innerHTML = name + " : " + score;
+  return li;
+}
 
-// const id = (name) => {
-//   return document.getElementById(name);
-// }
+const id = (name) => {
+  return document.getElementById(name);
+}
 
-// window.addEventListener('load',() => {
-//   ENDSCREEN = id("scoreboard");
-//   id("submit").addEventListener('submit', (e) => {
-//       e.preventDefault()
-//       let username = id('user-name').value;
-//       sendScore(username);
-//   })
-// })
+window.addEventListener('load',() => {
+  ENDSCREEN = id("scoreboard");
+  id("submit").addEventListener('submit', (e) => {
+      e.preventDefault()
+      let username = id('user-name').value;
+      sendScore(username);
+  })
+})
 
-// new p5(function(p5) {
-//   p5.preload = function() {
-
-//   }
-
-//   p5.mousePressed = function() {
-
-//   }
-
-//   p5.setup = function() {
-
-//   }
-
-//   p5.draw = function() {
-
-//   }
-// }
 
 window.preload = () => {
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
@@ -211,6 +201,7 @@ window.preload = () => {
   let musicnumber = Math.ceil(Math.random() * 3);
   soundFormats("mp3");
   BGMUSIC = loadSound("music/background" + musicnumber + ".mp3");
+  BOSSMUSIC = loadSound("music/boss.mp3");
   LOSESOUND = loadSound("music/lose");
   BOMBSOUND = loadSound("music/bomb");
   HEALTHSOUND = loadSound("music/health");
@@ -254,11 +245,13 @@ function initialize() {
       clearInterval(TIMERID);
       PAUSED = true;
       BGMUSIC.setVolume(.001);
+      BOSSMUSIC.setVolume(.001);
     } else {
       pause.html("Pause");
       startTime();
       loop();
       BGMUSIC.setVolume(.005);
+      BOSSMUSIC.setVolume(.02);
       PAUSED = false;
     }
   });
@@ -631,6 +624,8 @@ function enemyDeadUpdate(enemy) {
       TIME += 1;
       startTime();
       BOSSSTART = false;
+      BOSSMUSIC.stop();
+      BGMUSIC.play();
     } else {
       new EXP.Sprite(enemy.x, enemy.y);
     }
@@ -855,25 +850,37 @@ window.draw = () => {
     noLoop();
     clearInterval(TIMERID);
     BGMUSIC.stop();
+    BOSSMUSIC.stop();
     LOSESOUND.play();
     LOSESOUND.loop();
     LOSESOUND.setVolume(.3);
-    let buttonback = createButton("Game over. The shadows have taken over the land and soon the Sun.");
-    buttonback.style("border-radius", windowWidth / 80 + "px");
+    let buttonback = createButton("");
+    buttonback.style("border-radius", windowWidth / 60 + "px");
     buttonback.style("background-image", "radial-gradient(red 21%, black 80%)");
     buttonback.style("color", "white");
     buttonback.style("border", "none");
-    buttonback.style("font-size", windowWidth / 50 + "px");
+    buttonback.style("font-size", windowWidth / 60 + "px");
     buttonback.size(windowWidth / 2, 2 * windowHeight / 3);
     buttonback.position(windowWidth / 6 + 2 / 24 * windowWidth, windowHeight / 5);
-    let div = createDiv("Score: " + SCORE);
+    // let divLeaders = createDiv("Leaders");
+    let divLeaders = createDiv("");
+    divLeaders.id("LB-list");
+    divLeaders.style("color", "white");
+    divLeaders.style("font-size", windowWidth / 60 + "px");
+    divLeaders.size(windowWidth / 10, windowHeight / 15);
+    divLeaders.style("text-align","center");
+    divLeaders.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 360);
+    let div = createDiv("Your Score: " + SCORE);
     div.style("color", "white");
     div.style("font-size", windowWidth / 60 + "px");
     div.size(windowWidth / 10, windowHeight / 15);
     div.style("text-align","center");
     div.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 110);
-    // ENDSCREEN.style.display = "flex";
+    // <ol id="LB-list"></ol>
+    // let leadScores = createDiv("Leaders");
+    ENDSCREEN.style.display = "flex";
     // id("score").innerHTML =  "Your score: " + SCORE;
+    getScore();
     let playagain = createButton("Play Again");
     playagain.style("border-radius", windowWidth / 280 + "px");
     playagain.style("background-color", "black");
@@ -1144,6 +1151,10 @@ window.draw = () => {
     if (ENEMIES.length < 1) {
       let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2, PLAYER.y);
       enemy.life = TIME * 500;
+      BGMUSIC.stop();
+      BOSSMUSIC.play();
+      BOSSMUSIC.loop();
+      BOSSMUSIC.setVolume(.03);
     }
     if (frameCount % 120 === 0) {
       PLAYEROLDX = PLAYER.x;

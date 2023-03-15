@@ -19,10 +19,8 @@ async function sendScore(username) {
         username: username,
         score: SCORE,
       });
-      // console.log("Document written with ID: ", docRef.id);
       id("submit-button").disabled = true;
   } catch (e) {
-      // console.error("Error adding document: ", e);
   }
 }
 
@@ -33,12 +31,7 @@ async function getScore() {
   querySnapshot.forEach((doc) => {
       data.allScores.push(doc.data());
   });
-  // let leaderboard = id("LB-list");
-  // data.allScores.forEach(({username, score}) => {
-  //     let li = createLi(username, score);
-  //     leaderboard.appendChild(li);
-  // });
-  let leaderboard = id("LB-list");
+  let leaderboard = id("leaderboard");
   data.allScores.forEach(({username, score}) => {
       let li = createLi(username, score);
       leaderboard.appendChild(li);
@@ -135,8 +128,6 @@ let EXPIMG;
 let PLAYERSTANDLEFTIMG;
 let PLAYERSTANDRIGHTIMG;
 let FACING;
-// let rightattack;
-// let leftattack;
 let TIMERID;
 let LOSESOUND;
 let PAUSED;
@@ -170,8 +161,6 @@ window.addEventListener('load',() => {
 window.preload = () => {
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
   PLAYERSTANDRIGHTIMG = loadAnimation("images/right1.png");
-  // leftattack = loadAnimation("images/leftattack.png");
-  // rightattack = loadAnimation("images/rightattack.png");
   PLAYERRIGHTIMG = loadAnimation("images/right2.png", 3);
   PLAYERRIGHTIMG.frameDelay = 12;
   PLAYERLEFTIMG = loadAnimation("images/left2.png", 3);
@@ -219,14 +208,12 @@ window.preload = () => {
 };
 // to do:
 // save high SCORE, if they have completed tutorial
-// add projectile enemies
 // enemy damaged sound
 // add boss levels
 // cleaner visuals (UPGRADEDESC and LVL in bottom right)
 // multiple files, JSON
 
 window.setup = () => {
-  // preload();
   initialize();
 };
 
@@ -292,8 +279,6 @@ function visualInit() {
   BOSSENEMIES.addAnimation("BOSSLEFTIMG", BOSSLEFTIMG);
   BOSSENEMIES.addAnimation("BOSSRIGHTIMG", BOSSRIGHTIMG);
   WATER.addAnimation("WATERIMG", WATERIMG);
-  // PLAYER.addAnimation("rightattack", rightattack);
-	// PLAYER.addAnimation("leftattack", leftattack);
   PLAYER.addAnimation("right", PLAYERRIGHTIMG);
 	PLAYER.addAnimation("left", PLAYERLEFTIMG);
   PLAYER.addAnimation("PLAYERSTANDRIGHTIMG", PLAYERSTANDRIGHTIMG);
@@ -345,8 +330,9 @@ function resetStats() {
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
-    TIME = 298;
+    // TIME = 298;
     // TIME = 180;
+    TIME = 35;
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
@@ -434,7 +420,6 @@ function physicsInit() {
 
 function overlapCheck() {
   PLAYER.overlaps(EXP, expCollect);
-  // ENEMIES.collides(PLAYER, damagePlayer);
   ENEMIES.colliding(PLAYER, damagePlayer);
   PLAYER.overlaps(ORBS);
   PLAYER.overlaps(BOMBS, bombCollect);
@@ -785,11 +770,6 @@ function spawnEnemy() {
     enemy = new ENEMIES.Sprite();
     enemy.life = 100 + Math.pow(TIME, 1.35);
   }
-  // if (TIME > 300) {
-  //   let enemy = new SHOOTENEMIES.Sprite();
-  // } else {
-
-  // }
   if (Math.random() * 2 > 1) {
     if (Math.random() * 2 > 1) {
       enemy.x = Math.random() * (PLAYER.x + windowWidth / 2);
@@ -863,23 +843,20 @@ window.draw = () => {
     buttonback.size(windowWidth / 2, 2 * windowHeight / 3);
     buttonback.position(windowWidth / 6 + 2 / 24 * windowWidth, windowHeight / 5);
     // let divLeaders = createDiv("Leaders");
-    let divLeaders = createDiv("");
-    divLeaders.id("LB-list");
-    divLeaders.style("color", "white");
-    divLeaders.style("font-size", windowWidth / 60 + "px");
-    divLeaders.size(windowWidth / 10, windowHeight / 15);
-    divLeaders.style("text-align","center");
-    divLeaders.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 360);
+    // let divLeaders = createDiv("");
+    // divLeaders.id("LB-list");
+    // divLeaders.style("color", "white");
+    // divLeaders.style("font-size", windowWidth / 60 + "px");
+    // divLeaders.size(windowWidth / 10, windowHeight / 15);
+    // divLeaders.style("text-align","center");
+    // divLeaders.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 360);
     let div = createDiv("Your Score: " + SCORE);
     div.style("color", "white");
     div.style("font-size", windowWidth / 60 + "px");
     div.size(windowWidth / 10, windowHeight / 15);
     div.style("text-align","center");
     div.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 110);
-    // <ol id="LB-list"></ol>
-    // let leadScores = createDiv("Leaders");
     ENDSCREEN.style.display = "flex";
-    // id("score").innerHTML =  "Your score: " + SCORE;
     getScore();
     let playagain = createButton("Play Again");
     playagain.style("border-radius", windowWidth / 280 + "px");
@@ -961,7 +938,6 @@ window.draw = () => {
       ENEMIES[i].ani = "ENEMYLEFTIMG";
     }
     ENEMIES[i].life += 1;
-    // console.log(ENEMIES[i].life);
     if (ENEMIES[i].drag === -1) {
       ENEMIES[i].speed = .25 * (2 + TIME / 250);
       ENEMIES[i].drag = 0;
@@ -975,7 +951,6 @@ window.draw = () => {
       shadoworb.moveTowards(PLAYER.x, PLAYER.y);
       shadoworb.speed = TIME / 60;
     }
-    // SHOOTENEMIES[i].speed = .25 * (2.5 + TIME / 300);
     SHOOTENEMIES[i].speed = 2 + TIME / 800;
     if (SHOOTENEMIES[i].x < PLAYER.x) {
       SHOOTENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
@@ -1171,10 +1146,5 @@ window.draw = () => {
     } else {
       BOSSENEMIES[0].ani = "BOSSLEFTIMG";
     }
-    // spawn a boss
-    // make it charge and have lots of hp
-    // boss music
-    // charge does a lot of damage
-    // when defeated, start the time again
   }
 };

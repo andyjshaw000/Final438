@@ -1,3 +1,44 @@
+// import { initializeApp } from "firebase/app";
+// import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, getDocFromCache, limit} from "firebase/firestore";
+
+// const firebaseConfig = {
+//   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
+//   authDomain: "finalgame-d1901.firebaseapp.com",
+//   projectId: "finalgame-d1901",
+//   storageBucket: "finalgame-d1901.appspot.com",
+//   messagingSenderId: "713369379883",
+//   appId: "1:713369379883:web:9f486572415a15c167766e"
+// };
+
+// const app = initializeApp(firebaseConfig);
+// const db = getFirestore(app);
+
+// async function sendScore(username) {
+//   try {
+//       const docRef = await addDoc(collection(db, "players"), {
+//         username: username,
+//         score: SCORE,
+//       });
+//       console.log("Document written with ID: ", docRef.id);
+//   } catch (e) {
+//       console.error("Error adding document: ", e);
+//   }
+// }
+
+// async function getScore() {
+//   const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
+//   const querySnapshot = await getDocs(q);
+//   const data = {allScores: []};
+//   querySnapshot.forEach((doc) => {
+//       data.allScores.push(doc.data());
+//   });
+//   let leaderboard = id("LB-list");
+//   data.allScores.forEach(({username, score}) => {
+//       let li = createLi(username, score);
+//       leaderboard.appendChild(li);
+//   });
+// }
+
 let DEBUG = true;
 let BOSSSTART;
 let WEAPONCHOSEN;
@@ -94,11 +135,49 @@ let LOSESOUND;
 let PAUSED;
 let PLAYEROLDX;
 let PLAYEROLDY;
+let ENDSCREEN;
 let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massive damage!"], 1:["Add an Earthwall", "Indestructible earth surround you, preventing enemies from getting near you. Enemies hit are permanently slowed."], 2:["Increase Speed", "Move faster to dodge and weave past enemies."], 3:["Increase Health", "More health makes you able to take more damage for longer and increase your vision."], 4:["Increase Defense", "Bolster your armor and take less damage from enemies."], 5:["Power up your Airball", "Enemies won't know when it's coming, but when it does, it's too late."], 6:["Increase Sun Damage", "Shadows try to avoid the sun as much as possible, as it does massive damage."], 7:["Power up your Waterfield", "Surround yourself in an endless whirlpool that slows enemies in the tide."]};
 
 p5.disableFriendlyErrors = true;
 
-function preload() {
+// function createLi(name, score){
+//   let li = document.createElement("li");
+//   li.innerHTML = name + " : " + score;
+//   return li;
+// }
+
+// const id = (name) => {
+//   return document.getElementById(name);
+// }
+
+// window.addEventListener('load',() => {
+//   ENDSCREEN = id("scoreboard");
+//   id("submit").addEventListener('submit', (e) => {
+//       e.preventDefault()
+//       let username = id('user-name').value;
+//       sendScore(username);
+//   })
+// })
+
+// new p5(function(p5) {
+//   p5.preload = function() {
+
+//   }
+
+//   p5.mousePressed = function() {
+
+//   }
+
+//   p5.setup = function() {
+
+//   }
+
+//   p5.draw = function() {
+
+//   }
+// }
+
+window.preload = () => {
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
   PLAYERSTANDRIGHTIMG = loadAnimation("images/right1.png");
   // leftattack = loadAnimation("images/leftattack.png");
@@ -146,7 +225,7 @@ function preload() {
   HEALTHLVLUPSOUND = loadSound("music/healthincrease");
   DEFENSELVLUPSOUND = loadSound("music/defense");
   SUNLVLUPSOUND = loadSound("music/sun");
-}
+};
 // to do:
 // save high SCORE, if they have completed tutorial
 // add projectile enemies
@@ -156,6 +235,7 @@ function preload() {
 // multiple files, JSON
 
 window.setup = () => {
+  // preload();
   initialize();
 };
 
@@ -267,7 +347,8 @@ function resetStats() {
   LVL = 1;
   TIME = 1;
   if (DEBUG) {
-    PLAYERHEALTH = 100000;
+    // PLAYERHEALTH = 100000;
+    PLAYERHEALTH = 10;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
@@ -297,8 +378,8 @@ function chooseWeapon() {
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
   rect(0, 0, windowWidth, windowHeight);
-  optionsdescription = ["Select a sun orb that you can use to shoot enemies from afar", "Select a sun sword that allows you to slash through multiple enemies at close range"];
-  options = ["Select Sun Orb", "Select Sun Sword"];
+  let optionsdescription = ["Select a sun orb that you can use to shoot enemies from afar", "Select a sun sword that allows you to slash through multiple enemies at close range"];
+  let options = ["Select Sun Orb", "Select Sun Sword"];
   for (let i = 0; i < 2; i++) {
     let buttonback = createButton(optionsdescription[i]);
     buttonback.style("border-radius", windowWidth / 80 + "px");
@@ -791,6 +872,8 @@ window.draw = () => {
     div.size(windowWidth / 10, windowHeight / 15);
     div.style("text-align","center");
     div.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 110);
+    // ENDSCREEN.style.display = "flex";
+    // id("score").innerHTML =  "Your score: " + SCORE;
     let playagain = createButton("Play Again");
     playagain.style("border-radius", windowWidth / 280 + "px");
     playagain.style("background-color", "black");

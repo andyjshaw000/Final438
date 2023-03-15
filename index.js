@@ -1,4 +1,4 @@
-let DEBUG = false;
+let DEBUG = true;
 let WEAPONCHOSEN;
 let CHOSEORBS;
 let CHOSESWORD;
@@ -17,8 +17,11 @@ let EXP;
 let LVL;
 let EXPPOINTS;
 let ENEMIES;
+let SHOOTENEMIES;
+let FASTENEMIES;
 let TIME;
 let ORBS;
+let SHADOWORBS;
 let SWORDS;
 let BOMBS;
 let HEALTHS;
@@ -149,7 +152,6 @@ function initialize() {
   pause.mousePressed(() => {
     if (!PAUSED) {
       pause.html("Play");
-      // console.log("paused");
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
@@ -177,9 +179,7 @@ function initialize() {
   overlapCheck();
   backgroundmusic();
   let imagenumber = Math.ceil(Math.random() * 4);
-  // BG = loadImage("images/" + imagenumber + "-min.jpg");
   BG = loadImage("images/tile" + imagenumber + ".jpeg");
-  // BG = loadImage("images/tile.jpeg");
   MOUSEIMG = loadImage("images/mouse.png");
   WASDIMG = loadImage("images/wasd.png");
 }
@@ -238,13 +238,12 @@ function resetStats() {
   EXPPOINTS = 10;
   LVL = 1;
   TIME = 1;
-  // TIME = 25;
   if (DEBUG) {
     PLAYERHEALTH = 100000;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
-    TIME = 600;
-    // console.log(getFrameRate());
+    // TIME = 600;
+    TIME = 305;
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
@@ -265,7 +264,6 @@ function resetStats() {
 }
 
 function chooseWeapon() {
-  // console.log("choose weapon");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -310,10 +308,13 @@ function groupInit() {
   EARTH = new Group();
   HEALTHS = new Group();
   ORBS = new Group();
+  SHADOWORBS = new Group();
   SWORDS = new Group();
   AIR = new Group();
   WATER = new Group();
   ENEMIES = new Group();
+  SHOOTENEMIES = new ENEMIES.Group();
+  FASTENEMIES = new ENEMIES.Group();
 	EXP = new Group();
   FIRE = new Group();
 }
@@ -329,7 +330,7 @@ function physicsInit() {
 
 function overlapCheck() {
   PLAYER.overlaps(EXP, expCollect);
-  ENEMIES.collides(PLAYER, damagePlayer);
+  // ENEMIES.collides(PLAYER, damagePlayer);
   ENEMIES.colliding(PLAYER, damagePlayer);
   PLAYER.overlaps(ORBS);
   PLAYER.overlaps(BOMBS, bombCollect);
@@ -339,6 +340,7 @@ function overlapCheck() {
   PLAYER.overlaps(WATER);
   PLAYER.overlaps(AIR);
   PLAYER.overlaps(SWORDS);
+  SHADOWORBS.collides(PLAYER, damagePlayerOrb);
 
   EXP.overlaps(EXP);
   EXP.overlaps(ORBS);
@@ -350,6 +352,7 @@ function overlapCheck() {
   EXP.overlaps(WATER);
   EXP.overlaps(FIRE);
   EXP.overlaps(SWORDS);
+  EXP.overlaps(SHADOWORBS);
 
   ENEMIES.collides(ENEMIES);
   ENEMIES.overlaps(BOMBS);
@@ -360,6 +363,7 @@ function overlapCheck() {
   WATER.overlapping(ENEMIES, waterToEnemy);
   ORBS.collides(ENEMIES, orbToEnemy);
   SWORDS.collides(ENEMIES, swordToEnemy);
+  ENEMIES.overlaps(SHADOWORBS);
 
   ORBS.overlaps(ORBS);
   ORBS.overlaps(BOMBS);
@@ -402,6 +406,16 @@ function overlapCheck() {
   SWORDS.overlaps(AIR);
   SWORDS.overlaps(WATER);
   SWORDS.overlaps(FIRE);
+
+  SHADOWORBS.overlaps(SHADOWORBS);
+  SHADOWORBS.overlaps(ORBS);
+  SHADOWORBS.overlaps(SWORDS);
+  SHADOWORBS.overlaps(BOMBS);
+  SHADOWORBS.overlaps(HEALTHS);
+  SHADOWORBS.overlaps(EARTH);
+  SHADOWORBS.overlaps(AIR);
+  SHADOWORBS.overlaps(WATER);
+  SHADOWORBS.overlaps(FIRE);
 }
 
 function startTime() {
@@ -416,7 +430,6 @@ function expCollect(PLAYER, EXP) {
   EXP.remove();
   EXPPOINTS += 1;
   checkLevel();
-  // loop();
 }
 
 function bombCollect(PLAYER, bomb) {
@@ -438,7 +451,14 @@ function hpCollect(PLAYER, health) {
 }
 
 function damagePlayer(PLAYER) {
-  PLAYERHEALTH -= RESISTANCE * TIME / 1000;
+  PLAYERHEALTH -= RESISTANCE * TIME / 1500;
+  fill(255, 0, 0, 25);
+  rect(0, 0, windowWidth, windowHeight);
+}
+
+function damagePlayerOrb(shadoworb) {
+  PLAYERHEALTH -= RESISTANCE * TIME / 3000;
+  shadoworb.remove();
   fill(255, 0, 0, 25);
   rect(0, 0, windowWidth, windowHeight);
 }
@@ -512,7 +532,6 @@ function checkLevel() {
 }
 
 function generateUpgrades() {
-  // console.log("upgrade");
   noLoop();
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
@@ -606,7 +625,7 @@ function generateUpgrades() {
     } else if (button.attribute === 7) {
       if (!WATERON) {
         new WATER.Sprite();
-        WATER.layer = -100;
+        WATER.layer = 0;
         WATERON = true;
       } else {
         WATERFIELDDAMAGE += .6;
@@ -615,12 +634,7 @@ function generateUpgrades() {
       WATERLVLUPSOUND.setVolume(.2);
     }
     startTime();
-    // while (!isLooping()) {
-    // noLoop();
-    //  VV something wrong with loop
     loop();
-    // }
-    // console.log(loop());
     let buttons = selectAll("button");
     for (let i = 1; i < buttons.length; i++) {
       buttons[i].remove();
@@ -631,8 +645,28 @@ function generateUpgrades() {
 }
 
 function spawnEnemy() {
-  let enemy = new ENEMIES.Sprite();
-  enemy.life = 100 + Math.pow(TIME, 1.35);
+  let enemy;
+  if (TIME > 300) {
+    let randomnum = Math.random() * 2;
+    if (randomnum > 1.85) {
+      enemy = new SHOOTENEMIES.Sprite();
+      enemy.life = 100 + Math.pow(TIME, 1.25);
+    } else if (randomnum > 1.7) {
+      enemy = new FASTENEMIES.Sprite();
+      enemy.life = 100 + TIME;
+    } else {
+      enemy = new ENEMIES.Sprite();
+      enemy.life = 100 + Math.pow(TIME, 1.35);
+    }
+  } else {
+    enemy = new ENEMIES.Sprite();
+    enemy.life = 100 + Math.pow(TIME, 1.35);
+  }
+  // if (TIME > 300) {
+  //   let enemy = new SHOOTENEMIES.Sprite();
+  // } else {
+
+  // }
   if (Math.random() * 2 > 1) {
     if (Math.random() * 2 > 1) {
       enemy.x = Math.random() * (PLAYER.x + windowWidth / 2);
@@ -690,7 +724,6 @@ window.mousePressed = () => {
 
 window.draw = () => {
   if (PLAYERHEALTH <= 0) {
-    // console.log("dead");
     noLoop();
     clearInterval(TIMERID);
     BGMUSIC.stop();
@@ -735,6 +768,11 @@ window.draw = () => {
       ORBS[i].remove();
     }
   }
+  for (let i = 0; i < SHADOWORBS.length; i ++) {
+    if (SHADOWORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || SHADOWORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || SHADOWORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || SHADOWORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
+      SHADOWORBS[i].remove();
+    }
+  }
   clear();
   image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
   image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
@@ -765,9 +803,9 @@ window.draw = () => {
   } else if (y2 > windowHeight) {
     y2 = -windowHeight;
   }
-  if (frameCount % 200 === 0 && TIME > 20) {
-    for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 15000000; i++) {
-      if (ENEMIES.length < Math.pow(windowWidth, 2) / 13000) {
+  if (frameCount % 230 === 0 && TIME > 20) {
+    for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 18000000; i++) {
+      if (ENEMIES.length < Math.pow(windowWidth, 2) / 17000) {
         spawnEnemy();
       }
     }
@@ -779,7 +817,7 @@ window.draw = () => {
     }
     let enemydirection = Math.atan2(PLAYER.y - ENEMIES[i].y, PLAYER.x - ENEMIES[i].x) * 180 / Math.PI;
     ENEMIES[i].direction = enemydirection;
-    ENEMIES[i].speed = 2.5 + TIME / 250;
+    ENEMIES[i].speed = 2 + TIME / 200;
     if (ENEMIES[i].x < PLAYER.x) {
       ENEMIES[i].ani = "ENEMYRIGHTIMG";
     } else {
@@ -787,11 +825,23 @@ window.draw = () => {
     }
     ENEMIES[i].life += 1;
     if (ENEMIES[i].drag === -1) {
-      ENEMIES[i].speed = .25 * (2.5 + TIME / 300);
+      ENEMIES[i].speed = .25 * (2 + TIME / 200);
       ENEMIES[i].drag = 0;
     } else if (ENEMIES[i].drag === -2) {
-      ENEMIES[i].speed = .75 * (2.5 + TIME / 300);
+      ENEMIES[i].speed = .75 * (2 + TIME / 200);
     }
+  }
+  for (let i = 0; i < SHOOTENEMIES.length; i++) {
+    if (frameCount % 360 === 0) {
+      let shadoworb = new SHADOWORBS.Sprite(SHOOTENEMIES[i].x, SHOOTENEMIES[i].y, 15, 15);
+      shadoworb.moveTowards(PLAYER.x, PLAYER.y);
+      shadoworb.speed = 4;
+    }
+    // SHOOTENEMIES[i].speed = .25 * (2.5 + TIME / 300);
+    SHOOTENEMIES[i].speed = 2 + TIME / 800;
+  }
+  for (let i = 0; i < FASTENEMIES.length; i++) {
+    FASTENEMIES[i].speed = 2 + TIME / 75;
   }
   if (kb.pressing("down") && kb.pressing("left")) {
     PLAYER.ani = "left";
@@ -899,9 +949,6 @@ window.draw = () => {
   }
   while (EXP.length > 200) {
     EXP[0].remove();
-    // find a way to fix performance
-    // also random pausing when upgrading
-    // expCollect(EXP = EXP[0]);
   }
   if (AIRON) {
     AIR.x = constrain(AIR.x, PLAYER.x - windowWidth / 2, PLAYER.x + windowWidth / 2);

@@ -1,4 +1,5 @@
 let DEBUG = true;
+let BOSSSTART;
 let WEAPONCHOSEN;
 let CHOSEORBS;
 let CHOSESWORD;
@@ -19,6 +20,7 @@ let EXPPOINTS;
 let ENEMIES;
 let SHOOTENEMIES;
 let FASTENEMIES;
+let BOSSENEMIES;
 let TIME;
 let ORBS;
 let SHADOWORBS;
@@ -67,6 +69,8 @@ let SHOOTENEMYLEFTIMG;
 let SHOOTENEMYRIGHTIMG;
 let FASTENEMYLEFTIMG;
 let FASTENEMYRIGHTIMG;
+let BOSSRIGHTIMG;
+let BOSSLEFTIMG;
 let FIREIMG;
 let WATERIMG;
 let AIRIMG;
@@ -88,6 +92,8 @@ let FACING;
 let TIMERID;
 let LOSESOUND;
 let PAUSED;
+let PLAYEROLDX;
+let PLAYEROLDY;
 let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massive damage!"], 1:["Add an Earthwall", "Indestructible earth surround you, preventing enemies from getting near you. Enemies hit are permanently slowed."], 2:["Increase Speed", "Move faster to dodge and weave past enemies."], 3:["Increase Health", "More health makes you able to take more damage for longer and increase your vision."], 4:["Increase Defense", "Bolster your armor and take less damage from enemies."], 5:["Power up your Airball", "Enemies won't know when it's coming, but when it does, it's too late."], 6:["Increase Sun Damage", "Shadows try to avoid the sun as much as possible, as it does massive damage."], 7:["Power up your Waterfield", "Surround yourself in an endless whirlpool that slows enemies in the tide."]};
 
 p5.disableFriendlyErrors = true;
@@ -107,6 +113,8 @@ function preload() {
   SHOOTENEMYLEFTIMG = loadAnimation("images/shootenemy.png");
   FASTENEMYRIGHTIMG = loadAnimation("images/runenemy2.png");
   FASTENEMYLEFTIMG = loadAnimation("images/runenemy.png");
+  BOSSRIGHTIMG = loadAnimation("images/boss2.png");
+  BOSSLEFTIMG = loadAnimation("images/boss.png");
   FIREIMG = loadAnimation("images/fire.png");
   WATERIMG = loadAnimation("images/water1.png", 9);
   WATERIMG.frameDelay = 8;
@@ -208,6 +216,8 @@ function visualInit() {
   SHOOTENEMIES.addAnimation("SHOOTENEMYRIGHTIMG", SHOOTENEMYRIGHTIMG);
   FASTENEMIES.addAnimation("FASTENEMYLEFTIMG", FASTENEMYLEFTIMG);
   FASTENEMIES.addAnimation("FASTENEMYRIGHTIMG", FASTENEMYRIGHTIMG);
+  BOSSENEMIES.addAnimation("BOSSLEFTIMG", BOSSLEFTIMG);
+  BOSSENEMIES.addAnimation("BOSSRIGHTIMG", BOSSRIGHTIMG);
   WATER.addAnimation("WATERIMG", WATERIMG);
   // PLAYER.addAnimation("rightattack", rightattack);
 	// PLAYER.addAnimation("leftattack", leftattack);
@@ -238,6 +248,9 @@ function visualInit() {
 }
 
 function resetStats() {
+  PLAYEROLDX = PLAYER.x;
+  PLAYEROLDY = PLAYER.y;
+  BOSSSTART = false;
   WEAPONCHOSEN = false;
   CHOSEORBS = false;
   CHOSESWORD = false;
@@ -257,8 +270,8 @@ function resetStats() {
     PLAYERHEALTH = 100000;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
-    TIME = 600;
-    // TIME = 305;
+    // TIME = 600;
+    TIME = 298;
     // TIME = 180;
   }
   PLAYERSPEED = 3.25;
@@ -331,6 +344,7 @@ function groupInit() {
   ENEMIES = new Group();
   SHOOTENEMIES = new ENEMIES.Group();
   FASTENEMIES = new ENEMIES.Group();
+  BOSSENEMIES = new ENEMIES.Group();
 	EXP = new Group();
   FIRE = new Group();
 }
@@ -357,6 +371,8 @@ function overlapCheck() {
   PLAYER.overlaps(AIR);
   PLAYER.overlaps(SWORDS);
   SHADOWORBS.collides(PLAYER, damagePlayerOrb);
+  BOSSENEMIES.collides(PLAYER, damagePlayerCharge);
+  BOSSENEMIES.colliding(PLAYER, damagePlayer);
 
   EXP.overlaps(EXP);
   EXP.overlaps(ORBS);
@@ -479,6 +495,12 @@ function damagePlayerOrb(shadoworb) {
   rect(0, 0, windowWidth, windowHeight);
 }
 
+function damagePlayerCharge(charge) {
+  PLAYERHEALTH -= RESISTANCE * TIME / 220;
+  fill(255, 0, 0, 100);
+  rect(0, 0, windowWidth, windowHeight);
+}
+
 function orbToEnemy(weapon, enemy) {
   enemy.life -= BULLETDAMAGE;
   enemyDeadUpdate(enemy);
@@ -521,7 +543,16 @@ function bombToEnemy(weapon, enemy) {
 
 function enemyDeadUpdate(enemy) {
   if (enemy.life <= 0) {
-    new EXP.Sprite(enemy.x, enemy.y);
+    if (BOSSENEMIES.includes(enemy)) {
+      for (let i = 0; i < 50; i++) {
+        new EXP.Sprite(PLAYER.x, PLAYER.y);
+      }
+      TIME += 1;
+      startTime();
+      BOSSSTART = false;
+    } else {
+      new EXP.Sprite(enemy.x, enemy.y);
+    }
     if (Math.random() * 1000 > 998.5) {
       new BOMBS.Sprite(enemy.x - 10, enemy.y - 10);
     }
@@ -667,7 +698,7 @@ function spawnEnemy() {
     if (randomnum > (1.88 + 15 / TIME)) {
       enemy = new SHOOTENEMIES.Sprite();
       enemy.life = 100 + Math.pow(TIME, 1.25);
-    } else if (randomnum > (1.85 + 15 / TIME)) {
+    } else if (randomnum > (1.78 + 15 / TIME)) {
       enemy = new FASTENEMIES.Sprite();
       enemy.life = 100 + TIME;
     } else {
@@ -819,7 +850,7 @@ window.draw = () => {
   } else if (y2 > windowHeight) {
     y2 = -windowHeight;
   }
-  if (frameCount % 230 === 0 && TIME > 20) {
+  if (frameCount % 230 === 0 && TIME > 20 && !BOSSSTART) {
     for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 20000000; i++) {
       if (ENEMIES.length < Math.pow(windowWidth, 2) / 20000) {
         spawnEnemy();
@@ -827,7 +858,7 @@ window.draw = () => {
     }
   }
   for (let i = 0; i < ENEMIES.length; i++) {
-    if (ENEMIES[i].x > PLAYER.x + 2 * windowWidth / 3 || ENEMIES[i].y > PLAYER.y + 2 * windowHeight / 3 || ENEMIES[i].x < PLAYER.x - 2 * windowWidth / 3 || ENEMIES[i].y < PLAYER.y - 2 * windowHeight / 3) {
+    if (!BOSSSTART && ENEMIES[i].x > PLAYER.x + 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y > PLAYER.y + 2 * windowHeight / 3 || !BOSSSTART && ENEMIES[i].x < PLAYER.x - 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y < PLAYER.y - 2 * windowHeight / 3) {
       ENEMIES[i].remove();
       spawnEnemy();
     }
@@ -840,6 +871,7 @@ window.draw = () => {
       ENEMIES[i].ani = "ENEMYLEFTIMG";
     }
     ENEMIES[i].life += 1;
+    // console.log(ENEMIES[i].life);
     if (ENEMIES[i].drag === -1) {
       ENEMIES[i].speed = .25 * (2 + TIME / 250);
       ENEMIES[i].drag = 0;
@@ -1022,5 +1054,33 @@ window.draw = () => {
     text("Enemies: " + ENEMIES.length, windowWidth - 640, windowHeight / 20);
     text("EXP: " + EXP.length, windowWidth - 940, windowHeight / 20);
     text("All Sprites: " + allSprites.length, windowWidth - 1240, windowHeight / 20);
+  }
+  if (TIME % 300 === 0) {
+    BOSSSTART = true;
+    clearInterval(TIMERID);
+    if (ENEMIES.length < 1) {
+      let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2, PLAYER.y);
+      enemy.life = TIME * 500;
+    }
+    if (frameCount % 120 === 0) {
+      PLAYEROLDX = PLAYER.x;
+      PLAYEROLDY = PLAYER.y;
+    }
+    BOSSENEMIES[0].moveTowards(PLAYEROLDX, PLAYEROLDY);
+    if (frameCount % 300 < 30) {
+      BOSSENEMIES[0].speed = 1.5;
+    } else {
+      BOSSENEMIES[0].speed = 16 + TIME / 250;
+    }
+    if (BOSSENEMIES[0].x < PLAYER.x) {
+      BOSSENEMIES[0].ani = "BOSSRIGHTIMG";
+    } else {
+      BOSSENEMIES[0].ani = "BOSSLEFTIMG";
+    }
+    // spawn a boss
+    // make it charge and have lots of hp
+    // boss music
+    // charge does a lot of damage
+    // when defeated, start the time again
   }
 };

@@ -63,6 +63,10 @@ let PLAYERRIGHTIMG;
 let PLAYERLEFTIMG;
 let ENEMYLEFTIMG;
 let ENEMYRIGHTIMG;
+let SHOOTENEMYLEFTIMG;
+let SHOOTENEMYRIGHTIMG;
+let FASTENEMYLEFTIMG;
+let FASTENEMYRIGHTIMG;
 let FIREIMG;
 let WATERIMG;
 let AIRIMG;
@@ -99,6 +103,10 @@ function preload() {
   PLAYERLEFTIMG.frameDelay = 12;
   ENEMYRIGHTIMG = loadAnimation("images/enemy2.png");
   ENEMYLEFTIMG = loadAnimation("images/enemy.png");
+  SHOOTENEMYRIGHTIMG = loadAnimation("images/shootenemy2.png");
+  SHOOTENEMYLEFTIMG = loadAnimation("images/shootenemy.png");
+  FASTENEMYRIGHTIMG = loadAnimation("images/runenemy2.png");
+  FASTENEMYLEFTIMG = loadAnimation("images/runenemy.png");
   FIREIMG = loadAnimation("images/fire.png");
   WATERIMG = loadAnimation("images/water1.png", 9);
   WATERIMG.frameDelay = 8;
@@ -196,6 +204,10 @@ function backgroundmusic() {
 function visualInit() {
   ENEMIES.addAnimation("ENEMYLEFTIMG", ENEMYLEFTIMG);
   ENEMIES.addAnimation("ENEMYRIGHTIMG", ENEMYRIGHTIMG);
+  SHOOTENEMIES.addAnimation("SHOOTENEMYLEFTIMG", SHOOTENEMYLEFTIMG);
+  SHOOTENEMIES.addAnimation("SHOOTENEMYRIGHTIMG", SHOOTENEMYRIGHTIMG);
+  FASTENEMIES.addAnimation("FASTENEMYLEFTIMG", FASTENEMYLEFTIMG);
+  FASTENEMIES.addAnimation("FASTENEMYRIGHTIMG", FASTENEMYRIGHTIMG);
   WATER.addAnimation("WATERIMG", WATERIMG);
   // PLAYER.addAnimation("rightattack", rightattack);
 	// PLAYER.addAnimation("leftattack", leftattack);
@@ -245,8 +257,9 @@ function resetStats() {
     PLAYERHEALTH = 100000;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
-    // TIME = 600;
-    TIME = 305;
+    TIME = 600;
+    // TIME = 305;
+    // TIME = 180;
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
@@ -460,7 +473,7 @@ function damagePlayer(PLAYER) {
 }
 
 function damagePlayerOrb(shadoworb) {
-  PLAYERHEALTH -= RESISTANCE * TIME / 3000;
+  PLAYERHEALTH -= RESISTANCE * TIME / 100;
   shadoworb.remove();
   fill(255, 0, 0, 25);
   rect(0, 0, windowWidth, windowHeight);
@@ -649,12 +662,12 @@ function generateUpgrades() {
 
 function spawnEnemy() {
   let enemy;
-  if (TIME > 300) {
+  if (TIME > 180) {
     let randomnum = Math.random() * 2;
-    if (randomnum > 1.85) {
+    if (randomnum > (1.88 + 15 / TIME)) {
       enemy = new SHOOTENEMIES.Sprite();
       enemy.life = 100 + Math.pow(TIME, 1.25);
-    } else if (randomnum > 1.7) {
+    } else if (randomnum > (1.85 + 15 / TIME)) {
       enemy = new FASTENEMIES.Sprite();
       enemy.life = 100 + TIME;
     } else {
@@ -842,9 +855,19 @@ window.draw = () => {
     }
     // SHOOTENEMIES[i].speed = .25 * (2.5 + TIME / 300);
     SHOOTENEMIES[i].speed = 2 + TIME / 800;
+    if (SHOOTENEMIES[i].x < PLAYER.x) {
+      SHOOTENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
+    } else {
+      SHOOTENEMIES[i].ani = "SHOOTENEMYLEFTIMG";
+    }
   }
   for (let i = 0; i < FASTENEMIES.length; i++) {
     FASTENEMIES[i].speed = 2 + TIME / 75;
+    if (FASTENEMIES[i].x < PLAYER.x) {
+      FASTENEMIES[i].ani = "FASTENEMYRIGHTIMG";
+    } else {
+      FASTENEMIES[i].ani = "FASTENEMYLEFTIMG";
+    }
   }
   if (kb.pressing("down") && kb.pressing("left")) {
     PLAYER.ani = "left";

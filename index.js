@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, getDocFromCache, limit} from "firebase/firestore";
+import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getDocFromCache, limit} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
@@ -13,6 +13,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+function createLi(name, score){
+  let li = document.createElement("li");
+  li.innerHTML = name + " : " + score;
+  return li;
+}
+
+const id = (name) => {
+  return document.getElementById(name);
+}
+
 async function sendScore(username) {
   try {
       const docRef = await addDoc(collection(db, "players"), {
@@ -21,6 +31,7 @@ async function sendScore(username) {
       });
       id("submit-button").disabled = true;
   } catch (e) {
+    console.error(e);
   }
 }
 
@@ -32,11 +43,21 @@ async function getScore() {
       data.allScores.push(doc.data());
   });
   let leaderboard = id("leaderboard");
+  leaderboard.innerHTML = "";
   data.allScores.forEach(({username, score}) => {
       let li = createLi(username, score);
       leaderboard.appendChild(li);
   });
 }
+
+onSnapshot(
+  collection(db, "players"),
+  (snapshot) => {
+    getScore();
+  }, (e) => {
+    console.error(e);
+  }
+);
 
 let DEBUG = true;
 let BOSSSTART;
@@ -138,16 +159,6 @@ let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massi
 
 p5.disableFriendlyErrors = true;
 
-function createLi(name, score){
-  let li = document.createElement("li");
-  li.innerHTML = name + " : " + score;
-  return li;
-}
-
-const id = (name) => {
-  return document.getElementById(name);
-}
-
 window.addEventListener('load',() => {
   ENDSCREEN = id("scoreboard");
   id("submit").addEventListener('submit', (e) => {
@@ -156,7 +167,6 @@ window.addEventListener('load',() => {
       sendScore(username);
   })
 })
-
 
 window.preload = () => {
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");

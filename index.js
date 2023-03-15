@@ -187,7 +187,7 @@ function initialize() {
 function backgroundmusic() {
   BGMUSIC.play();
   BGMUSIC.loop();
-  BGMUSIC.setVolume(.005);
+  BGMUSIC.setVolume(.025);
   userStartAudio();
 }
 
@@ -684,9 +684,9 @@ window.mousePressed = () => {
   }
 };
 
-window.windowResized = () => {
-  resizeCanvas(windowWidth, windowHeight);
-}
+// window.windowResized = () => {
+//   resizeCanvas(windowWidth, windowHeight);
+// }
 
 window.draw = () => {
   if (PLAYERHEALTH <= 0) {
@@ -740,8 +740,8 @@ window.draw = () => {
   image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
-  image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 35, 35);
-  image(WASDIMG, 15, 17 * windowHeight / 20, 35, 35);
+  image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 40, 40);
+  image(WASDIMG, 15, 16.8 * windowHeight / 20, 45, 45);
   fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
   // // image(FIREIMG, 0, 10, 20, 50);

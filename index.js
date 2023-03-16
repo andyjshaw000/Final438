@@ -247,7 +247,7 @@ function initialize() {
   PAUSE.style("font-size", windowWidth / 120 + "px");
   PAUSE.style("border", "none");
   PAUSE.size(windowWidth / 20, windowHeight / 30);
-  PAUSE.position(windowWidth / 60, windowHeight / 20 + 10);
+  PAUSE.position(windowWidth / 35, windowHeight / 15);
   PAUSE.mousePressed(() => {
     if (!PAUSED) {
       PAUSE.html("Play");
@@ -279,6 +279,16 @@ function initialize() {
 	}
   overlapCheck();
   backgroundmusic();
+}
+
+function backgroundmusic() {
+  BGMUSIC.play();
+  BGMUSIC.loop();
+  BGMUSIC.setVolume(.025);
+  userStartAudio();
+}
+
+function visualInit() {
   let imagenumber = Math.ceil(Math.random() * 4);
   BG = loadImage("images/tile" + imagenumber + ".jpeg");
   FIREIMG2 = loadImage("images/fire.png");
@@ -291,16 +301,6 @@ function initialize() {
   HEALTHIMG2 = loadImage("images/healthup.png");
   MOUSEIMG = loadImage("images/mouse.png");
   WASDIMG = loadImage("images/wasd.png");
-}
-
-function backgroundmusic() {
-  BGMUSIC.play();
-  BGMUSIC.loop();
-  BGMUSIC.setVolume(.025);
-  userStartAudio();
-}
-
-function visualInit() {
   ENEMIES.addAnimation("ENEMYLEFTIMG", ENEMYLEFTIMG);
   ENEMIES.addAnimation("ENEMYRIGHTIMG", ENEMYRIGHTIMG);
   SHOOTENEMIES.addAnimation("SHOOTENEMYLEFTIMG", SHOOTENEMYLEFTIMG);
@@ -367,7 +367,7 @@ function resetStats() {
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
-  SWORDDAMAGE = 340;
+  SWORDDAMAGE = 440;
   EARTHON = false;
   AIRON = false;
   xdirection = 1;
@@ -409,6 +409,7 @@ function chooseWeapon() {
     buttonback.position(i * windowWidth / 3 + windowWidth / 26 + windowWidth / 6, windowHeight / 5);
     let button = createButton(options[i]);
     button.style("border-radius", windowWidth / 120 + "px");
+    button.style("font-size", windowWidth / 80 + "px");
     button.style("background-color", "white");
     button.style("border", "1px solid");
     button.size(windowWidth / 10, windowHeight / 15);
@@ -661,7 +662,7 @@ function enemyDeadUpdate(enemy) {
       new HEALTHS.Sprite(enemy.x + 10, enemy.y - 10);
     }
     enemy.remove();
-    SCORE += 100 + TIME;
+    SCORE += Math.ceil(500 * TIME / windowWidth);
   }
 }
 
@@ -722,6 +723,7 @@ function generateUpgrades() {
     buttonback.position(i * windowWidth / 3 + windowWidth / 26, windowHeight / 5);
     let button = createButton(UPGRADEDESC[options[i]][0]);
     button.style("border-radius", windowWidth / 120 + "px");
+    button.style("font-size", windowWidth / 80 + "px");
     button.style("background-color", "white");
     button.style("border", "1px solid");
     button.size(windowWidth / 10, windowHeight / 15);
@@ -774,7 +776,7 @@ function generateUpgrades() {
     } else if (button.attribute === 6) {
       SUNCT += 1;
       BULLETDAMAGE += 300;
-      SWORDDAMAGE += 100;
+      SWORDDAMAGE += 200;
       SUNLVLUPSOUND.play();
       SUNLVLUPSOUND.setVolume(.1);
     } else if (button.attribute === 7) {
@@ -963,8 +965,8 @@ window.draw = () => {
   image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
-  image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowWidth / 40);
-  image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowWidth / 35);
+  image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowHeight / 20);
+  image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowHeight / 15);
   fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
   if (x1 < -windowWidth){
@@ -1118,13 +1120,13 @@ window.draw = () => {
   stroke(45, 45, 45);
   strokeWeight(2.5);
   textSize(windowWidth / 70);
-  text("Score: " + SCORE, windowWidth - 140, windowHeight / 20);
+  text("Score: " + SCORE, windowWidth * 11 / 13, windowHeight / 20);
   let minutes = Math.floor(TIME / 60);
   let extraSeconds = TIME % 60;
   minutes = minutes < 10 ? "0" + minutes : minutes;
   extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
   text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
-  text(": Move", windowWidth / 13.2, 18.9 * windowHeight / 20);
+  text(": Move", windowWidth / 12.4, 18.9 * windowHeight / 20);
   text(": Attack", windowWidth / 11.8, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);

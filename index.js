@@ -89,7 +89,7 @@ document.onvisibilitychange = function() {
   }
 };
 
-let DEBUG = false;
+let DEBUG = true;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -375,8 +375,8 @@ function resetStats() {
   LVL = 1;
   TIME = 1;
   if (DEBUG) {
-    PLAYERHEALTH = 100000;
-    // PLAYERHEALTH = 1;
+    // PLAYERHEALTH = 100000;
+    PLAYERHEALTH = 1;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
@@ -859,7 +859,7 @@ function spawnEnemy() {
   }
 }
 
-window.mousePressed = () => {
+function attackMouse() {
   if (CHOSEORBS) {
     // SUNATKSOUND.play();
     // SUNATKSOUND.setVolume(.2);
@@ -889,6 +889,13 @@ window.mousePressed = () => {
       SWORDS.remove();
     });
   }
+}
+window.mousePressed = () => {
+  attackMouse();
+};
+
+window.mouseIsPressed = () => {
+  attackMouse();
 };
 
 // window.windowResized = () => {
@@ -986,7 +993,7 @@ window.draw = () => {
   image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
   image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowHeight / 20);
   image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowHeight / 15);
-  fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
+  fill(50, 40, 50, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
   if (x1 < -windowWidth){
     x1 = windowWidth;
@@ -1241,7 +1248,7 @@ window.draw = () => {
     clearInterval(TIMERID);
     if (ENEMIES.length < 1) {
       let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2, PLAYER.y);
-      enemy.life = TIME * 200;
+      enemy.life = TIME * 300;
       BGMUSIC.stop();
       BOSSMUSIC.play();
       BOSSMUSIC.loop();

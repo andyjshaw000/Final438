@@ -896,7 +896,7 @@ function attackMouse() {
     }
     sword.width = 80;
     sword.height = 80;
-    sword.rotate(90, 4.6).then(() => {
+    sword.rotate(90, 5.2).then(() => {
       SWORDS.remove();
     });
   }
@@ -905,9 +905,9 @@ window.mousePressed = () => {
   attackMouse();
 };
 
-window.mouseIsPressed = () => {
-  attackMouse();
-}
+// window.mouseIsPressed = () => {
+//   attackMouse();
+// }
 
 // window.windowResized = () => {
 //   resizeCanvas(windowWidth, windowHeight);
@@ -985,7 +985,8 @@ window.draw = () => {
       submitButton.remove();
     });
   }
-  if (frameCount % 120 === 0) {
+  if (frameCount % 60 === 0) {
+    // attackMouse();
     for (let i = 0; i < ORBS.length; i ++) {
       if (ORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || ORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || ORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || ORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
         ORBS[i].remove();
@@ -996,6 +997,12 @@ window.draw = () => {
         SHADOWORBS[i].remove();
       }
     }
+  }
+  // if (frameCount % 30 === 0) {
+  //   attackMouse();
+  // }
+  if (mouseIsPressed && frameCount % 15 === 0) {
+    attackMouse();
   }
   clear();
   image(BG, x1, y1, windowWidth + 8, windowHeight + 8);

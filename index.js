@@ -1,6 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getDocFromCache, limit} from "firebase/firestore";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getDocFromCache, limit} from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
   authDomain: "finalgame-d1901.firebaseapp.com",
@@ -69,7 +68,7 @@ onSnapshot(
   }
 );
 
-let DEBUG = true;
+let DEBUG = false;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;

@@ -100,7 +100,7 @@ document.onvisibilitychange = function() {
   }
 };
 
-let DEBUG = true;
+let DEBUG = false;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;

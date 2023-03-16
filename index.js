@@ -1,6 +1,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js';
 import { getFirestore, addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js';
 
+// Project created by Andy Shaw for HCDE 438 at the University of Washington
+
 const firebaseConfig = {
   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
   authDomain: "finalgame-d1901.firebaseapp.com",

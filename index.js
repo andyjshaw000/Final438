@@ -76,13 +76,13 @@ document.onvisibilitychange = function() {
     noLoop();
     clearInterval(TIMERID);
     PAUSED = true;
-    BGMUSIC.setVolume(.001);
-    BOSSMUSIC.setVolume(.001);
+    BGMUSIC.setVolume(.01);
+    BOSSMUSIC.setVolume(.01);
   } else {
     startTime();
     loop();
-    BGMUSIC.setVolume(.005);
-    BOSSMUSIC.setVolume(.02);
+    BGMUSIC.setVolume(.025);
+    BOSSMUSIC.setVolume(.03);
     PAUSED = false;
   }
 };
@@ -271,14 +271,14 @@ function initialize() {
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
-      BGMUSIC.setVolume(.001);
-      BOSSMUSIC.setVolume(.001);
+      BGMUSIC.setVolume(.01);
+      BOSSMUSIC.setVolume(.01);
     } else {
       PAUSE.html("Pause");
       startTime();
       loop();
-      BGMUSIC.setVolume(.005);
-      BOSSMUSIC.setVolume(.02);
+      BGMUSIC.setVolume(.025);
+      BOSSMUSIC.setVolume(.03);
       PAUSED = false;
     }
   });

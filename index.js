@@ -386,7 +386,7 @@ function resetStats() {
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
-  SWORDDAMAGE = 440;
+  SWORDDAMAGE = 540;
   EARTHON = false;
   AIRON = false;
   xdirection = 1;

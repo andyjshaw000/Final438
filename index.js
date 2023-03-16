@@ -1144,8 +1144,8 @@ window.draw = () => {
   minutes = minutes < 10 ? "0" + minutes : minutes;
   extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
   text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
-  text(": Move", windowWidth / 12.4, 18.9 * windowHeight / 20);
-  text(": Attack", windowWidth / 11.8, 17.4 * windowHeight / 20);
+  text(": Attack", windowWidth / 12.4, 18.9 * windowHeight / 20);
+  text(": Move", windowWidth / 11.8, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);

@@ -33,6 +33,7 @@ async function getScore() {
   });
   if (LEADERS) {
     LEADERS.html("Leaderboard");
+    // LEADERS.child(createDiv(""));
     data.allScores.forEach(({username, score}) => {
       // let name = username;
       // name += new Array(username.length + 1).join(" ");
@@ -42,11 +43,13 @@ async function getScore() {
       // text-align: left;
       li.style("text-align", "left");
       li.style("display", "flex");
+      li.style("padding-top", windowHeight / 40 + "px");
+      // li.style("align-items", "center");
       li.style("font-size", windowWidth / 60 + "px");
       let liname = createDiv("Username: " + username);
-      liname.size(windowWidth / 3, windowHeight / 15);
+      liname.size(windowWidth / 3, windowHeight / 40);
       let liscore = createDiv("Score: " + score);
-      liscore.size(windowWidth / 6, windowHeight / 15);
+      liscore.size(windowWidth / 6, windowHeight / 40);
       li.child(liname);
       li.child(liscore);
       // let scoretext = createDiv("Username: " + username + "    Score: " + score);
@@ -66,7 +69,7 @@ onSnapshot(
   }
 );
 
-let DEBUG = false;
+let DEBUG = true;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -237,6 +240,8 @@ function initialize() {
   PAUSE.position(windowWidth / 60, windowHeight / 20 + 10);
   PAUSE.mousePressed(() => {
     if (!PAUSED) {
+      // fill(0, 0, 0, 180);
+      // rect(0, 0, windowWidth, windowHeight);
       PAUSE.html("Play");
       noLoop();
       clearInterval(TIMERID);
@@ -860,12 +865,13 @@ window.draw = () => {
     div.style("font-size", windowWidth / 60 + "px");
     div.size(windowWidth / 6, windowHeight / 15);
     div.style("text-align","center");
-    div.position(windowWidth / 3 + 3 * windowWidth / 26 - 2 * windowWidth / 70, 4 * windowHeight / 5 - 110);
+    div.position(windowWidth / 3 + 3 * windowWidth / 26 - 2 * windowWidth / 70, 7 * windowHeight / 11);
     LEADERS = createDiv("Leaderboard");
     LEADERS.style("color", "white");
     LEADERS.style("font-size", windowWidth / 45 + "px");
     LEADERS.size(windowWidth / 3, windowHeight / 15);
     LEADERS.style("text-align","center");
+    // LEADERS.style("padding-top", windowHeight / 25 + "px");
     LEADERS.position(windowWidth / 3 + windowWidth / 26 - 2 * windowWidth / 70, windowHeight / 5 + 60);
     NAMEINPUT = createInput("");
     NAMEINPUT.position(windowWidth / 3 + 2 * windowWidth / 26, 4 * windowHeight / 5 - 80);
@@ -1089,8 +1095,8 @@ window.draw = () => {
   minutes = minutes < 10 ? "0" + minutes : minutes;
   extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
   text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
-  text(": Move", windowWidth / 14, 18.9 * windowHeight / 20);
-  text(": Attack", windowWidth / 12.4, 17.4 * windowHeight / 20);
+  text(": Move", windowWidth / 13.2, 18.9 * windowHeight / 20);
+  text(": Attack", windowWidth / 11.8, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   textFont("Arial");

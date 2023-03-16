@@ -13,23 +13,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-function createLi(name, score){
-  let li = document.createElement("li");
-  li.innerHTML = name + " : " + score;
-  return li;
-}
-
-const id = (name) => {
-  return document.getElementById(name);
-}
-
-async function sendScore(username) {
+function submitScore() {
   try {
-      const docRef = await addDoc(collection(db, "players"), {
-        username: username,
+      const docRef = addDoc(collection(db, "players"), {
+        username: NAMEINPUT.value(),
         score: SCORE,
       });
-      id("submit-button").disabled = true;
   } catch (e) {
     console.error(e);
   }
@@ -42,12 +31,30 @@ async function getScore() {
   querySnapshot.forEach((doc) => {
       data.allScores.push(doc.data());
   });
-  let leaderboard = id("leaderboard");
-  leaderboard.innerHTML = "";
-  data.allScores.forEach(({username, score}) => {
-      let li = createLi(username, score);
-      leaderboard.appendChild(li);
-  });
+  if (LEADERS) {
+    LEADERS.html("Leaderboard");
+    data.allScores.forEach(({username, score}) => {
+      // let name = username;
+      // name += new Array(username.length + 1).join(" ");
+      // console.log(name);
+      // let li = createDiv("Username: " + username + "Score: " + score);
+      let li = createDiv("");
+      // text-align: left;
+      li.style("text-align", "left");
+      li.style("display", "flex");
+      li.style("font-size", windowWidth / 60 + "px");
+      let liname = createDiv("Username: " + username);
+      liname.size(windowWidth / 3, windowHeight / 15);
+      let liscore = createDiv("Score: " + score);
+      liscore.size(windowWidth / 6, windowHeight / 15);
+      li.child(liname);
+      li.child(liscore);
+      // let scoretext = createDiv("Username: " + username + "    Score: " + score);
+      // text-align: left;
+      // scoretext.style("text-align", "right");
+      LEADERS.child(li);
+    });
+  }
 }
 
 onSnapshot(
@@ -59,7 +66,9 @@ onSnapshot(
   }
 );
 
-let DEBUG = true;
+let DEBUG = false;
+let NAMEINPUT;
+let LEADERS;
 let BOSSSTART;
 let WEAPONCHOSEN;
 let CHOSEORBS;
@@ -154,19 +163,10 @@ let LOSESOUND;
 let PAUSED;
 let PLAYEROLDX;
 let PLAYEROLDY;
-let ENDSCREEN;
+let PAUSE;
 let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massive damage!"], 1:["Add an Earthwall", "Indestructible earth surround you, preventing enemies from getting near you. Enemies hit are permanently slowed."], 2:["Increase Speed", "Move faster to dodge and weave past enemies."], 3:["Increase Health", "More health makes you able to take more damage for longer and increase your vision."], 4:["Increase Defense", "Bolster your armor and take less damage from enemies."], 5:["Power up your Airball", "Enemies won't know when it's coming, but when it does, it's too late."], 6:["Increase Sun Damage", "Shadows try to avoid the sun as much as possible, as it does massive damage."], 7:["Power up your Waterfield", "Surround yourself in an endless whirlpool that slows enemies in the tide."]};
 
 p5.disableFriendlyErrors = true;
-
-window.addEventListener('load',() => {
-  ENDSCREEN = id("scoreboard");
-  id("submit").addEventListener('submit', (e) => {
-      e.preventDefault()
-      let username = id('user-name').value;
-      sendScore(username);
-  })
-})
 
 window.preload = () => {
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
@@ -229,22 +229,22 @@ window.setup = () => {
 
 function initialize() {
   noSmooth();
-  let pause = createButton("Pause");
-  pause.style("border-radius", windowWidth / 220 + "px");
-  pause.style("font-size", windowWidth / 120 + "px");
-  pause.style("border", "none");
-  pause.size(50, 20);
-  pause.position(20, windowHeight / 20 + 10);
-  pause.mousePressed(() => {
+  PAUSE = createButton("Pause");
+  PAUSE.style("border-radius", windowWidth / 220 + "px");
+  PAUSE.style("font-size", windowWidth / 120 + "px");
+  PAUSE.style("border", "none");
+  PAUSE.size(windowWidth / 20, windowHeight / 30);
+  PAUSE.position(windowWidth / 60, windowHeight / 20 + 10);
+  PAUSE.mousePressed(() => {
     if (!PAUSED) {
-      pause.html("Play");
+      PAUSE.html("Play");
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
       BGMUSIC.setVolume(.001);
       BOSSMUSIC.setVolume(.001);
     } else {
-      pause.html("Pause");
+      PAUSE.html("Pause");
       startTime();
       loop();
       BGMUSIC.setVolume(.005);
@@ -336,7 +336,7 @@ function resetStats() {
   TIME = 1;
   if (DEBUG) {
     // PLAYERHEALTH = 100000;
-    PLAYERHEALTH = 10;
+    PLAYERHEALTH = 1;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
@@ -364,6 +364,7 @@ function resetStats() {
 
 function chooseWeapon() {
   noLoop();
+  PAUSE.attribute("disabled", "");
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
   rect(0, 0, windowWidth, windowHeight);
@@ -394,6 +395,7 @@ function chooseWeapon() {
       }
       startTime();
       loop();
+      PAUSE.removeAttribute("disabled");
       let buttons = selectAll("button");
       for (let i = 1; i < buttons.length; i++) {
         buttons[i].remove();
@@ -651,6 +653,7 @@ function checkLevel() {
 
 function generateUpgrades() {
   noLoop();
+  PAUSE.attribute("disabled", "");
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
   rect(0, 0, windowWidth, windowHeight);
@@ -753,6 +756,7 @@ function generateUpgrades() {
     }
     startTime();
     loop();
+    PAUSE.removeAttribute("disabled");
     let buttons = selectAll("button");
     for (let i = 1; i < buttons.length; i++) {
       buttons[i].remove();
@@ -836,8 +840,9 @@ window.mousePressed = () => {
 // }
 
 window.draw = () => {
-  if (PLAYERHEALTH <= 0) {
+  if (Math.floor(PLAYERHEALTH) <= 0) {
     noLoop();
+    PAUSE.attribute("disabled", "");
     clearInterval(TIMERID);
     BGMUSIC.stop();
     BOSSMUSIC.stop();
@@ -847,26 +852,41 @@ window.draw = () => {
     let buttonback = createButton("");
     buttonback.style("border-radius", windowWidth / 60 + "px");
     buttonback.style("background-image", "radial-gradient(red 21%, black 80%)");
-    buttonback.style("color", "white");
     buttonback.style("border", "none");
-    buttonback.style("font-size", windowWidth / 60 + "px");
     buttonback.size(windowWidth / 2, 2 * windowHeight / 3);
     buttonback.position(windowWidth / 6 + 2 / 24 * windowWidth, windowHeight / 5);
-    // let divLeaders = createDiv("Leaders");
-    // let divLeaders = createDiv("");
-    // divLeaders.id("LB-list");
-    // divLeaders.style("color", "white");
-    // divLeaders.style("font-size", windowWidth / 60 + "px");
-    // divLeaders.size(windowWidth / 10, windowHeight / 15);
-    // divLeaders.style("text-align","center");
-    // divLeaders.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 360);
     let div = createDiv("Your Score: " + SCORE);
-    div.style("color", "white");
+    div.style("color", "black");
     div.style("font-size", windowWidth / 60 + "px");
-    div.size(windowWidth / 10, windowHeight / 15);
+    div.size(windowWidth / 6, windowHeight / 15);
     div.style("text-align","center");
-    div.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 110);
-    ENDSCREEN.style.display = "flex";
+    div.position(windowWidth / 3 + 3 * windowWidth / 26 - 2 * windowWidth / 70, 4 * windowHeight / 5 - 110);
+    LEADERS = createDiv("Leaderboard");
+    LEADERS.style("color", "white");
+    LEADERS.style("font-size", windowWidth / 45 + "px");
+    LEADERS.size(windowWidth / 3, windowHeight / 15);
+    LEADERS.style("text-align","center");
+    LEADERS.position(windowWidth / 3 + windowWidth / 26 - 2 * windowWidth / 70, windowHeight / 5 + 60);
+    NAMEINPUT = createInput("");
+    NAMEINPUT.position(windowWidth / 3 + 2 * windowWidth / 26, 4 * windowHeight / 5 - 80);
+    NAMEINPUT.style("border-radius", windowWidth / 280 + "px");
+    NAMEINPUT.style("background-color", "white");
+    NAMEINPUT.style("color", "red");
+    NAMEINPUT.style("border", "black 2px solid");
+    NAMEINPUT.size(windowWidth / 10, windowHeight / 20);
+    let submitButton = createButton("Submit Score");
+    submitButton.position(windowWidth / 3 + 5 * windowWidth / 26, 4 * windowHeight / 5 - 80);
+    submitButton.style("border-radius", windowWidth / 280 + "px");
+    submitButton.style("background-color", "white");
+    submitButton.style("color", "red");
+    submitButton.style("border", "black 2px solid");
+    submitButton.style("font-size", windowWidth / 120 + "px");
+    submitButton.size(windowWidth / 15, windowHeight / 17);
+    submitButton.mousePressed(function() {
+      submitScore();
+      submitButton.remove();
+      NAMEINPUT.remove();
+    });
     getScore();
     let playagain = createButton("Play Again");
     playagain.style("border-radius", windowWidth / 280 + "px");
@@ -882,9 +902,13 @@ window.draw = () => {
       initialize();
       TIME = 30;
       loop();
+      PAUSE.removeAttribute("disabled");
       buttonback.remove();
       div.remove();
       playagain.remove();
+      LEADERS.remove();
+      NAMEINPUT.remove();
+      submitButton.remove();
     });
   }
   for (let i = 0; i < ORBS.length; i ++) {
@@ -902,11 +926,11 @@ window.draw = () => {
   image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
   image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
-  image(MOUSEIMG, 15, 18.25 * windowHeight / 20, 40, 40);
-  image(WASDIMG, 15, 16.8 * windowHeight / 20, 45, 45);
+  image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowWidth / 40);
+  image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowWidth / 35);
   fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
-  // // image(FIREIMG, 0, 10, 20, 50);
+  // image(FIREIMG, 0, 10, 20, 50);
   if (x1 < -windowWidth){
     x1 = windowWidth;
   } else if (x1 > windowWidth) {
@@ -1064,9 +1088,9 @@ window.draw = () => {
   let extraSeconds = TIME % 60;
   minutes = minutes < 10 ? "0" + minutes : minutes;
   extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
-  text("Time: " + minutes + ":" + extraSeconds, 80, windowHeight / 20);
-  text("   : Move", 80, windowHeight * 17.75 / 20);
-  text("     : Attack", 80, windowHeight * 19 / 20);
+  text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
+  text(": Move", windowWidth / 14, 18.9 * windowHeight / 20);
+  text(": Attack", windowWidth / 12.4, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   textFont("Arial");

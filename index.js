@@ -273,6 +273,7 @@ window.setup = () => {
 function initialize() {
   noSmooth();
   PAUSE = createButton("Pause");
+  PAUSE.removeAttribute("disabled");
   PAUSE.style("border-radius", windowWidth / 220 + "px");
   PAUSE.style("font-size", windowWidth / 120 + "px");
   PAUSE.style("border", "none");
@@ -902,7 +903,10 @@ function attackMouse() {
   }
 }
 window.mousePressed = () => {
+  // if (!mouseIsPressed) {
   attackMouse();
+  // }
+  // return true;
 };
 
 // window.mouseIsPressed = () => {
@@ -914,7 +918,7 @@ window.mousePressed = () => {
 // }
 
 window.draw = () => {
-  if (Math.floor(PLAYERHEALTH) <= 0) {
+  if (PLAYERHEALTH <= 0) {
     noLoop();
     PAUSE.attribute("disabled", "");
     clearInterval(TIMERID);
@@ -970,13 +974,13 @@ window.draw = () => {
     playagain.size(windowWidth / 10, windowHeight / 15);
     playagain.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 20);
     playagain.mousePressed(() => {
+      PAUSE.removeAttribute("disabled");
       allSprites.remove();
       clear();
       LOSESOUND.stop();
       initialize();
       TIME = 30;
       loop();
-      PAUSE.removeAttribute("disabled");
       buttonback.remove();
       div.remove();
       playagain.remove();
@@ -986,7 +990,6 @@ window.draw = () => {
     });
   }
   if (frameCount % 60 === 0) {
-    // attackMouse();
     for (let i = 0; i < ORBS.length; i ++) {
       if (ORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || ORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || ORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || ORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
         ORBS[i].remove();
@@ -998,11 +1001,10 @@ window.draw = () => {
       }
     }
   }
-  // if (frameCount % 30 === 0) {
-  //   attackMouse();
-  // }
-  if (mouseIsPressed && frameCount % 15 === 0) {
+  if (mouseIsPressed && frameCount % 20 === 0) {
+    // if (!mousePressed()) {
     attackMouse();
+    // }
   }
   clear();
   image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
@@ -1172,7 +1174,7 @@ window.draw = () => {
   text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
   text(": Attack", windowWidth / 12.4, 18.9 * windowHeight / 20);
   text(": Move", windowWidth / 11.8, 17.4 * windowHeight / 20);
-  text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
+  text("Health: " + Math.ceil(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);
   if (EARTHON) {
@@ -1247,7 +1249,6 @@ window.draw = () => {
     image(SPEEDIMG2, 17 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 55, windowWidth / 55);
   }
   if (TIME > 15 && !WEAPONCHOSEN) {
-    redraw();
     UPGRADESOUND.play();
     UPGRADESOUND.setVolume(.1);
     chooseWeapon();

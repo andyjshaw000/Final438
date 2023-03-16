@@ -71,6 +71,22 @@ onSnapshot(
   }
 );
 
+document.onvisibilitychange = function() {
+  if (document.visibilityState === "hidden") {
+    noLoop();
+    clearInterval(TIMERID);
+    PAUSED = true;
+    BGMUSIC.setVolume(.001);
+    BOSSMUSIC.setVolume(.001);
+  } else {
+    startTime();
+    loop();
+    BGMUSIC.setVolume(.005);
+    BOSSMUSIC.setVolume(.02);
+    PAUSED = false;
+  }
+};
+
 let DEBUG = false;
 let NAMEINPUT;
 let LEADERS;

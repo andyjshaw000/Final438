@@ -89,7 +89,7 @@ document.onvisibilitychange = function() {
   }
 };
 
-let DEBUG = true;
+let DEBUG = false;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -381,7 +381,7 @@ function resetStats() {
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
-    TIME = 280;
+    TIME = 298;
     // TIME = 180;
     // TIME = 35;
   }
@@ -1033,8 +1033,10 @@ window.draw = () => {
   }
   for (let i = 0; i < ENEMIES.length; i++) {
     if (!BOSSSTART && ENEMIES[i].x > PLAYER.x + 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y > PLAYER.y + 2 * windowHeight / 3 || !BOSSSTART && ENEMIES[i].x < PLAYER.x - 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y < PLAYER.y - 2 * windowHeight / 3) {
-      ENEMIES[i].remove();
-      spawnEnemy();
+      if (!BOSSENEMIES.includes(ENEMIES[i])) {
+        ENEMIES[i].remove();
+        spawnEnemy();
+      }
     }
     let enemydirection = Math.atan2(PLAYER.y - ENEMIES[i].y, PLAYER.x - ENEMIES[i].x) * 180 / Math.PI;
     ENEMIES[i].direction = enemydirection;
@@ -1255,22 +1257,24 @@ window.draw = () => {
     BOSSSTART = true;
     clearInterval(TIMERID);
     if (ENEMIES.length < 1) {
-      let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2, PLAYER.y);
+      let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2.5, PLAYER.y);
       enemy.life = TIME * 300;
       BGMUSIC.stop();
       BOSSMUSIC.play();
       BOSSMUSIC.loop();
       BOSSMUSIC.setVolume(.03);
     }
+    BOSSENEMIES[0].x = constrain(BOSSENEMIES[0].x, PLAYER.x - windowWidth / 2, PLAYER.x + windowWidth / 2);
+    BOSSENEMIES[0].y = constrain(BOSSENEMIES[0].y, PLAYER.y - windowHeight / 2, PLAYER.y + windowHeight / 2);
     if (frameCount % 120 === 0) {
       PLAYEROLDX = PLAYER.x;
       PLAYEROLDY = PLAYER.y;
     }
     BOSSENEMIES[0].moveTowards(PLAYEROLDX, PLAYEROLDY);
-    if (frameCount % 300 < 30) {
+    if (frameCount % 300 < 15) {
       BOSSENEMIES[0].speed = 1.5;
     } else {
-      BOSSENEMIES[0].speed = 16 + TIME / 250;
+      BOSSENEMIES[0].speed = 12 + TIME / 250;
     }
     if (BOSSENEMIES[0].x < PLAYER.x) {
       BOSSENEMIES[0].ani = "BOSSRIGHTIMG";

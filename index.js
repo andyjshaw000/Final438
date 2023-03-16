@@ -32,28 +32,30 @@ async function getScore() {
   });
   if (LEADERS) {
     LEADERS.html("Leaderboard");
-    // LEADERS.child(createDiv(""));
+    let emptyli = createDiv("");
+    emptyli.style("text-align", "left");
+    emptyli.style("display", "flex");
+    emptyli.style("padding-top", windowHeight / 40 + "px");
+    emptyli.style("font-size", windowWidth / 60 + "px");
+    let namediv = createDiv("Name");
+    namediv.size(windowWidth / 3, windowHeight / 40);
+    let scorediv = createDiv("Score");
+    scorediv.size(windowWidth / 6, windowHeight / 40);
+    emptyli.child(namediv);
+    emptyli.child(scorediv);
+    LEADERS.child(emptyli);
     data.allScores.forEach(({username, score}) => {
-      // let name = username;
-      // name += new Array(username.length + 1).join(" ");
-      // console.log(name);
-      // let li = createDiv("Username: " + username + "Score: " + score);
       let li = createDiv("");
-      // text-align: left;
       li.style("text-align", "left");
       li.style("display", "flex");
       li.style("padding-top", windowHeight / 40 + "px");
-      // li.style("align-items", "center");
-      li.style("font-size", windowWidth / 60 + "px");
-      let liname = createDiv("Username: " + username);
+      li.style("font-size", windowWidth / 80 + "px");
+      let liname = createDiv(username);
       liname.size(windowWidth / 3, windowHeight / 40);
-      let liscore = createDiv("Score: " + score);
+      let liscore = createDiv(score);
       liscore.size(windowWidth / 6, windowHeight / 40);
       li.child(liname);
       li.child(liscore);
-      // let scoretext = createDiv("Username: " + username + "    Score: " + score);
-      // text-align: left;
-      // scoretext.style("text-align", "right");
       LEADERS.child(li);
     });
   }
@@ -68,7 +70,7 @@ onSnapshot(
   }
 );
 
-let DEBUG = false;
+let DEBUG = true;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -339,8 +341,8 @@ function resetStats() {
   LVL = 1;
   TIME = 1;
   if (DEBUG) {
-    PLAYERHEALTH = 100000;
-    // PLAYERHEALTH = 1;
+    // PLAYERHEALTH = 100000;
+    PLAYERHEALTH = 1;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;

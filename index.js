@@ -1,3 +1,4 @@
+// Project created by Andy Shaw for HCDE 438 at the University of Washington
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js';
 import { getFirestore, addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js';
 

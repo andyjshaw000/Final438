@@ -340,18 +340,18 @@ function resetStats() {
   LVL = 1;
   TIME = 1;
   if (DEBUG) {
-    // PLAYERHEALTH = 100000;
-    PLAYERHEALTH = 1;
+    PLAYERHEALTH = 100000;
+    // PLAYERHEALTH = 1;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
-    // TIME = 298;
+    TIME = 280;
     // TIME = 180;
-    TIME = 35;
+    // TIME = 35;
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
-  SWORDDAMAGE = 1040;
+  SWORDDAMAGE = 540;
   EARTHON = false;
   AIRON = false;
   xdirection = 1;
@@ -613,7 +613,7 @@ function earthToEnemy(weapon, enemy) {
 }
 
 function bombToEnemy(weapon, enemy) {
-  enemy.life = -1;
+  enemy.life -= 1300;
   enemyDeadUpdate(enemy);
 }
 
@@ -745,7 +745,7 @@ function generateUpgrades() {
       AIRLVLUPSOUND.setVolume(.25);
     } else if (button.attribute === 6) {
       BULLETDAMAGE += 300;
-      SWORDDAMAGE += 350;
+      SWORDDAMAGE += 200;
       SUNLVLUPSOUND.play();
       SUNLVLUPSOUND.setVolume(.1);
     } else if (button.attribute === 7) {
@@ -1161,11 +1161,14 @@ window.draw = () => {
     text("All Sprites: " + allSprites.length, windowWidth - 1240, windowHeight / 20);
   }
   if (TIME % 300 === 0) {
+    if (!BOSSSTART) {
+      ENEMIES.remove();
+    }
     BOSSSTART = true;
     clearInterval(TIMERID);
     if (ENEMIES.length < 1) {
       let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2, PLAYER.y);
-      enemy.life = TIME * 500;
+      enemy.life = TIME * 200;
       BGMUSIC.stop();
       BOSSMUSIC.play();
       BOSSMUSIC.loop();

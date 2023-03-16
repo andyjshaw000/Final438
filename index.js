@@ -70,7 +70,7 @@ onSnapshot(
   }
 );
 
-let DEBUG = true;
+let DEBUG = false;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -918,14 +918,16 @@ window.draw = () => {
       submitButton.remove();
     });
   }
-  for (let i = 0; i < ORBS.length; i ++) {
-    if (ORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || ORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || ORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || ORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
-      ORBS[i].remove();
+  if (frameCount % 120 === 0) {
+    for (let i = 0; i < ORBS.length; i ++) {
+      if (ORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || ORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || ORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || ORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
+        ORBS[i].remove();
+      }
     }
-  }
-  for (let i = 0; i < SHADOWORBS.length; i ++) {
-    if (SHADOWORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || SHADOWORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || SHADOWORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || SHADOWORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
-      SHADOWORBS[i].remove();
+    for (let i = 0; i < SHADOWORBS.length; i ++) {
+      if (SHADOWORBS[i].x > PLAYER.x + 2 * windowWidth / 3 || SHADOWORBS[i].y > PLAYER.y + 2 * windowHeight / 3 || SHADOWORBS[i].x < PLAYER.x - 2 * windowWidth / 3 || SHADOWORBS[i].y < PLAYER.y - 2 * windowHeight / 3) {
+        SHADOWORBS[i].remove();
+      }
     }
   }
   clear();
@@ -972,41 +974,62 @@ window.draw = () => {
     }
     let enemydirection = Math.atan2(PLAYER.y - ENEMIES[i].y, PLAYER.x - ENEMIES[i].x) * 180 / Math.PI;
     ENEMIES[i].direction = enemydirection;
-    ENEMIES[i].speed = 2 + TIME / 250;
-    if (ENEMIES[i].x < PLAYER.x) {
-      ENEMIES[i].ani = "ENEMYRIGHTIMG";
-    } else {
-      ENEMIES[i].ani = "ENEMYLEFTIMG";
-    }
     ENEMIES[i].life += 1;
+    if (FASTENEMIES.includes(ENEMIES[i])) {
+      ENEMIES[i].speed = 2 + TIME / 100;
+      if (ENEMIES[i].x < PLAYER.x) {
+        ENEMIES[i].ani = "FASTENEMYRIGHTIMG";
+      } else {
+        ENEMIES[i].ani = "FASTENEMYLEFTIMG";
+      }
+    } else if (SHOOTENEMIES.includes(ENEMIES[i])) {
+      if (frameCount % 360 === 0) {
+        let shadoworb = new SHADOWORBS.Sprite(ENEMIES[i].x, ENEMIES[i].y, 15, 15);
+        shadoworb.moveTowards(PLAYER.x, PLAYER.y);
+        shadoworb.speed = TIME / 60;
+      }
+      ENEMIES[i].speed = 2 + TIME / 1000;
+      if (ENEMIES[i].x < PLAYER.x) {
+        ENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
+      } else {
+        ENEMIES[i].ani = "SHOOTENEMYLEFTIMG";
+      }
+    } else {
+      ENEMIES[i].speed = 2 + TIME / 250;
+      if (ENEMIES[i].x < PLAYER.x) {
+        ENEMIES[i].ani = "ENEMYRIGHTIMG";
+      } else {
+        ENEMIES[i].ani = "ENEMYLEFTIMG";
+      }
+    }
     if (ENEMIES[i].drag === -1) {
       ENEMIES[i].speed = .25 * (2 + TIME / 250);
       ENEMIES[i].drag = 0;
     } else if (ENEMIES[i].drag === -2) {
-      ENEMIES[i].speed = .75 * (2 + TIME / 250);
+      ENEMIES[i].speed = .5 * (2 + TIME / 250);
     }
   }
-  for (let i = 0; i < SHOOTENEMIES.length; i++) {
-    if (frameCount % 360 === 0) {
-      let shadoworb = new SHADOWORBS.Sprite(SHOOTENEMIES[i].x, SHOOTENEMIES[i].y, 15, 15);
-      shadoworb.moveTowards(PLAYER.x, PLAYER.y);
-      shadoworb.speed = TIME / 60;
-    }
-    SHOOTENEMIES[i].speed = 2 + TIME / 800;
-    if (SHOOTENEMIES[i].x < PLAYER.x) {
-      SHOOTENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
-    } else {
-      SHOOTENEMIES[i].ani = "SHOOTENEMYLEFTIMG";
-    }
-  }
-  for (let i = 0; i < FASTENEMIES.length; i++) {
-    FASTENEMIES[i].speed = 2 + TIME / 75;
-    if (FASTENEMIES[i].x < PLAYER.x) {
-      FASTENEMIES[i].ani = "FASTENEMYRIGHTIMG";
-    } else {
-      FASTENEMIES[i].ani = "FASTENEMYLEFTIMG";
-    }
-  }
+  // for (let i = 0; i < SHOOTENEMIES.length; i++) {
+  //   if (frameCount % 360 === 0) {
+  //     let shadoworb = new SHADOWORBS.Sprite(SHOOTENEMIES[i].x, SHOOTENEMIES[i].y, 15, 15);
+  //     shadoworb.moveTowards(PLAYER.x, PLAYER.y);
+  //     shadoworb.speed = TIME / 60;
+  //   }
+  //   SHOOTENEMIES[i].speed = 2 + TIME / 800;
+  //   if (SHOOTENEMIES[i].x < PLAYER.x) {
+  //     SHOOTENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
+  //   } else {
+  //     SHOOTENEMIES[i].ani = "SHOOTENEMYLEFTIMG";
+  //   }
+  // }
+  // for (let i = 0; i < FASTENEMIES.length; i++) {
+  //   FASTENEMIES[i].speed = 2 + TIME / 75;
+  //   if (FASTENEMIES[i].x < PLAYER.x) {
+  //     FASTENEMIES[i].ani = "FASTENEMYRIGHTIMG";
+  //   } else {
+  //     FASTENEMIES[i].ani = "FASTENEMYLEFTIMG";
+  //   }
+  // }
   if (kb.pressing("down") && kb.pressing("left")) {
     PLAYER.ani = "left";
     FACING = "left";
@@ -1086,7 +1109,7 @@ window.draw = () => {
   fill("red");
   rect(windowWidth * 97 / 200, windowHeight / 1.8, map(PLAYERHEALTH, 0, PLAYERMAXHEALTH, 0, windowWidth * 3 / 100), windowHeight / 60);
   fill("white");
-  textFont("Courier New");
+  // textFont("Courier New");
   stroke(45, 45, 45);
   strokeWeight(2.5);
   textSize(windowWidth / 70);
@@ -1100,7 +1123,7 @@ window.draw = () => {
   text(": Attack", windowWidth / 11.8, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
-  textFont("Arial");
+  // textFont("Arial");
   text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);
   if (EARTHON) {
     for (let i = 1; i < EARTH.length + 1; i++) {

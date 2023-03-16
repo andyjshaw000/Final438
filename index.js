@@ -1,4 +1,8 @@
 // Project created by Andy Shaw for HCDE 438 at the University of Washington
+// Things to fix:
+// Performance
+// Sword swing location
+// Water blocking health
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js';
 import { getFirestore, addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js';
 
@@ -385,7 +389,7 @@ function resetStats() {
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
-  SWORDDAMAGE = 440;
+  SWORDDAMAGE = 540;
   EARTHON = false;
   AIRON = false;
   xdirection = 1;

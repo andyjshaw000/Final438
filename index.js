@@ -235,12 +235,6 @@ window.preload = () => {
   DEFENSELVLUPSOUND = loadSound("music/defense");
   SUNLVLUPSOUND = loadSound("music/sun");
 };
-// to do:
-// save high SCORE, if they have completed tutorial
-// enemy damaged sound
-// add boss levels
-// cleaner visuals (UPGRADEDESC and LVL in bottom right)
-// multiple files, JSON
 
 window.setup = () => {
   initialize();
@@ -256,8 +250,6 @@ function initialize() {
   PAUSE.position(windowWidth / 60, windowHeight / 20 + 10);
   PAUSE.mousePressed(() => {
     if (!PAUSED) {
-      // fill(0, 0, 0, 180);
-      // rect(0, 0, windowWidth, windowHeight);
       PAUSE.html("Play");
       noLoop();
       clearInterval(TIMERID);
@@ -909,7 +901,6 @@ window.draw = () => {
     LEADERS.style("font-size", windowWidth / 45 + "px");
     LEADERS.size(windowWidth / 3, windowHeight / 15);
     LEADERS.style("text-align","center");
-    // LEADERS.style("padding-top", windowHeight / 25 + "px");
     LEADERS.position(windowWidth / 3 + windowWidth / 26 - 2 * windowWidth / 70, windowHeight / 5 + 60);
     NAMEINPUT = createInput("");
     NAMEINPUT.position(windowWidth / 3 + 2 * windowWidth / 26, 4 * windowHeight / 5 - 80);
@@ -1045,27 +1036,6 @@ window.draw = () => {
       ENEMIES[i].speed = .5 * (2 + TIME / 250);
     }
   }
-  // for (let i = 0; i < SHOOTENEMIES.length; i++) {
-  //   if (frameCount % 360 === 0) {
-  //     let shadoworb = new SHADOWORBS.Sprite(SHOOTENEMIES[i].x, SHOOTENEMIES[i].y, 15, 15);
-  //     shadoworb.moveTowards(PLAYER.x, PLAYER.y);
-  //     shadoworb.speed = TIME / 60;
-  //   }
-  //   SHOOTENEMIES[i].speed = 2 + TIME / 800;
-  //   if (SHOOTENEMIES[i].x < PLAYER.x) {
-  //     SHOOTENEMIES[i].ani = "SHOOTENEMYRIGHTIMG";
-  //   } else {
-  //     SHOOTENEMIES[i].ani = "SHOOTENEMYLEFTIMG";
-  //   }
-  // }
-  // for (let i = 0; i < FASTENEMIES.length; i++) {
-  //   FASTENEMIES[i].speed = 2 + TIME / 75;
-  //   if (FASTENEMIES[i].x < PLAYER.x) {
-  //     FASTENEMIES[i].ani = "FASTENEMYRIGHTIMG";
-  //   } else {
-  //     FASTENEMIES[i].ani = "FASTENEMYLEFTIMG";
-  //   }
-  // }
   if (kb.pressing("down") && kb.pressing("left")) {
     PLAYER.ani = "left";
     FACING = "left";
@@ -1145,7 +1115,6 @@ window.draw = () => {
   fill("red");
   rect(windowWidth * 97 / 200, windowHeight / 1.8, map(PLAYERHEALTH, 0, PLAYERMAXHEALTH, 0, windowWidth * 3 / 100), windowHeight / 60);
   fill("white");
-  // textFont("Courier New");
   stroke(45, 45, 45);
   strokeWeight(2.5);
   textSize(windowWidth / 70);
@@ -1159,7 +1128,6 @@ window.draw = () => {
   text(": Attack", windowWidth / 11.8, 17.4 * windowHeight / 20);
   text("Health: " + Math.floor(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
-  // textFont("Arial");
   text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);
   if (EARTHON) {
     for (let i = 1; i < EARTH.length + 1; i++) {

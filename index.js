@@ -1,5 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
-import { doc, getFirestore, collection, addDoc, getDocs, query, where, orderBy, onSnapshot, getDocFromCache, limit} from "https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js";
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js';
+import { getFirestore, addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js';
+
 const firebaseConfig = {
   apiKey: "AIzaSyCTX1d5j_PhFYCmfOJeWREeo9bVurJM9KQ",
   authDomain: "finalgame-d1901.firebaseapp.com",
@@ -75,13 +76,13 @@ document.onvisibilitychange = function() {
     noLoop();
     clearInterval(TIMERID);
     PAUSED = true;
-    BGMUSIC.setVolume(.001);
-    BOSSMUSIC.setVolume(.001);
+    BGMUSIC.setVolume(.01);
+    BOSSMUSIC.setVolume(.01);
   } else {
     startTime();
     loop();
-    BGMUSIC.setVolume(.005);
-    BOSSMUSIC.setVolume(.02);
+    BGMUSIC.setVolume(.025);
+    BOSSMUSIC.setVolume(.03);
     PAUSED = false;
   }
 };
@@ -270,14 +271,14 @@ function initialize() {
       noLoop();
       clearInterval(TIMERID);
       PAUSED = true;
-      BGMUSIC.setVolume(.001);
-      BOSSMUSIC.setVolume(.001);
+      BGMUSIC.setVolume(.01);
+      BOSSMUSIC.setVolume(.01);
     } else {
       PAUSE.html("Pause");
       startTime();
       loop();
-      BGMUSIC.setVolume(.005);
-      BOSSMUSIC.setVolume(.02);
+      BGMUSIC.setVolume(.025);
+      BOSSMUSIC.setVolume(.03);
       PAUSED = false;
     }
   });

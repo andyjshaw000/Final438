@@ -79,6 +79,14 @@ let CHOSEORBS;
 let CHOSESWORD;
 let SWORDDAMAGE;
 let BG;
+let FIREIMG2;
+let WATERIMG2;
+let AIRIMG2;
+let EARTHIMG2;
+let SUNIMG2;
+let DEFENSEIMG2;
+let SPEEDIMG2;
+let HEALTHIMG2;
 let MOUSEIMG;
 let WASDIMG;
 let x1;
@@ -116,6 +124,13 @@ let WATER;
 let FIRE;
 let FIREON;
 let FIRECT;
+let WATERCT;
+let AIRCT;
+let EARTHCT;
+let SUNCT;
+let DEFENSECT;
+let SPEEDCT;
+let HEALTHCT;
 let RESISTANCE;
 let FIREBALLDAMAGE;
 let WATERFIELDDAMAGE;
@@ -125,8 +140,8 @@ let BGMUSIC;
 let BOSSMUSIC;
 let BOMBSOUND;
 let HEALTHSOUND;
-let EXPERIENCESOUND;
-let SUNATKSOUND;
+// let EXPERIENCESOUND;
+// let SUNATKSOUND;
 let UPGRADESOUND;
 let SUNLVLUPSOUND;
 let WATERLVLUPSOUND;
@@ -208,9 +223,9 @@ window.preload = () => {
   LOSESOUND = loadSound("music/lose");
   BOMBSOUND = loadSound("music/bomb");
   HEALTHSOUND = loadSound("music/health");
-  EXPERIENCESOUND = loadSound("music/experience");
+  // EXPERIENCESOUND = loadSound("music/experience");
   UPGRADESOUND = loadSound("music/selectability");
-  SUNATKSOUND = loadSound("music/sunorb");
+  // SUNATKSOUND = loadSound("music/sunorb");
   WATERLVLUPSOUND = loadSound("music/water");
   FIRELVLUPSOUND = loadSound("music/fireballs");
   AIRLVLUPSOUND = loadSound("music/air");
@@ -274,6 +289,14 @@ function initialize() {
   backgroundmusic();
   let imagenumber = Math.ceil(Math.random() * 4);
   BG = loadImage("images/tile" + imagenumber + ".jpeg");
+  FIREIMG2 = loadImage("images/fire.png");
+  WATERIMG2 = loadImage("images/water1.png");
+  AIRIMG2 = loadImage("images/air.png");
+  EARTHIMG2 = loadImage("images/earth.png");
+  SUNIMG2 = loadImage("images/sun.png");
+  DEFENSEIMG2 = loadImage("images/defense.png");
+  SPEEDIMG2 = loadImage("images/speed.png");
+  HEALTHIMG2 = loadImage("images/healthup.png");
   MOUSEIMG = loadImage("images/mouse.png");
   WASDIMG = loadImage("images/wasd.png");
 }
@@ -341,8 +364,8 @@ function resetStats() {
   LVL = 1;
   TIME = 1;
   if (DEBUG) {
-    // PLAYERHEALTH = 100000;
-    PLAYERHEALTH = 1;
+    PLAYERHEALTH = 100000;
+    // PLAYERHEALTH = 1;
     PLAYERMAXHEALTH = 100000;
     EXPPOINTS = 29;
     // TIME = 600;
@@ -352,7 +375,7 @@ function resetStats() {
   }
   PLAYERSPEED = 3.25;
   BULLETDAMAGE = 840;
-  SWORDDAMAGE = 540;
+  SWORDDAMAGE = 340;
   EARTHON = false;
   AIRON = false;
   xdirection = 1;
@@ -360,6 +383,13 @@ function resetStats() {
   WATERON = false;
   FIREON = false;
   FIRECT = 0;
+  WATERCT = 0;
+  AIRCT = 0;
+  EARTHCT = 0;
+  SUNCT = 0;
+  DEFENSECT = 0;
+  SPEEDCT = 0;
+  HEALTHCT = 0;
   RESISTANCE = 1;
   FIREBALLDAMAGE = 320;
   WATERFIELDDAMAGE = 4;
@@ -534,8 +564,8 @@ function startTime() {
 }
 
 function expCollect(PLAYER, EXP) {
-  EXPERIENCESOUND.play();
-  EXPERIENCESOUND.setVolume(.05);
+  // EXPERIENCESOUND.play();
+  // EXPERIENCESOUND.setVolume(.05);
   EXP.remove();
   EXPPOINTS += 1;
   checkLevel();
@@ -715,26 +745,31 @@ function generateUpgrades() {
       FIRELVLUPSOUND.play();
       FIRELVLUPSOUND.setVolume(.3);
     } else if (button.attribute === 1) {
+      EARTHCT += 1;
       EARTHON = true;
       new EARTH.Sprite();
       ROTATORDAMAGE += 25;
       EARTHLVLUPSOUND.play();
       EARTHLVLUPSOUND.setVolume(.08);
     } else if (button.attribute === 2) {
+      SPEEDCT += 1;
       PLAYERSPEED += .25;
       SPEEDLVLUPSOUND.play();
       SPEEDLVLUPSOUND.setVolume(.2);
     } else if (button.attribute === 3) {
-      let healthgained = PLAYERMAXHEALTH;
+      HEALTHCT += 1;
+      let healthgained = PLAYERMAXHEALTH / 2;
       PLAYERMAXHEALTH += healthgained;
       PLAYERHEALTH += healthgained;
       HEALTHLVLUPSOUND.play();
       HEALTHLVLUPSOUND.setVolume(.3);
     } else if (button.attribute === 4) {
+      DEFENSECT += 1;
       RESISTANCE *= .96;
       DEFENSELVLUPSOUND.play();
       DEFENSELVLUPSOUND.setVolume(.2);
     } else if (button.attribute === 5) {
+      AIRCT += 1;
       if (!AIRON) {
         new AIR.Sprite();
         AIRON = true;
@@ -745,8 +780,9 @@ function generateUpgrades() {
       AIRLVLUPSOUND.play();
       AIRLVLUPSOUND.setVolume(.25);
     } else if (button.attribute === 6) {
+      SUNCT += 1;
       BULLETDAMAGE += 300;
-      SWORDDAMAGE += 200;
+      SWORDDAMAGE += 100;
       SUNLVLUPSOUND.play();
       SUNLVLUPSOUND.setVolume(.1);
     } else if (button.attribute === 7) {
@@ -757,6 +793,7 @@ function generateUpgrades() {
       } else {
         WATERFIELDDAMAGE += .6;
       }
+      WATERCT += 1;
       WATERLVLUPSOUND.play();
       WATERLVLUPSOUND.setVolume(.2);
     }
@@ -811,14 +848,14 @@ function spawnEnemy() {
 
 window.mousePressed = () => {
   if (CHOSEORBS) {
-    SUNATKSOUND.play();
-    SUNATKSOUND.setVolume(.2);
+    // SUNATKSOUND.play();
+    // SUNATKSOUND.setVolume(.2);
     let orb = new ORBS.Sprite(PLAYER.x, PLAYER.y, 15, 15);
     orb.moveTowards(mouse.x + PLAYER.mouse.x, mouse.y + PLAYER.mouse.y);
     orb.speed = 20;
   } else if (CHOSESWORD && SWORDS.length < 1) {
-    SUNATKSOUND.play();
-    SUNATKSOUND.setVolume(.2);
+    // SUNATKSOUND.play();
+    // SUNATKSOUND.setVolume(.2);
     let sword = new SWORDS.Sprite([[PLAYER.x, PLAYER.y], [mouse.x + PLAYER.mouse.x, mouse.y + PLAYER.mouse.y]]);
     if (PLAYER.x > mouse.x + PLAYER.mouse.x) {
       if (PLAYER.y > mouse.y + PLAYER.mouse.y) {
@@ -939,7 +976,6 @@ window.draw = () => {
   image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowWidth / 35);
   fill(65, 65, 65, TIME / 1 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
-  // image(FIREIMG, 0, 10, 20, 50);
   if (x1 < -windowWidth){
     x1 = windowWidth;
   } else if (x1 > windowWidth) {
@@ -1133,6 +1169,9 @@ window.draw = () => {
       EARTH[i - 1].x = PLAYER.x + 150 * circularx;
       EARTH[i - 1].y = PLAYER.y + 150 * circulary;
     }
+    for (let i = EARTHCT; i > 0; i--) {
+      image(EARTHIMG2, 21 * windowWidth / 25, 19 * windowHeight / 20 - i  * windowHeight / 50, windowWidth / 50, windowWidth / 50);
+    }
   }
   while (EXP.length > 200) {
     EXP[0].remove();
@@ -1148,10 +1187,16 @@ window.draw = () => {
     if (AIR.y > PLAYER.y + windowHeight / 2 || AIR.y < PLAYER.y - windowHeight / 2) {
       ydirection *= -1;
     }
+    for (let i = AIRCT; i > 0; i--) {
+      image(AIRIMG2, 22 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
+    }
   }
   if (WATERON) {
     WATER.x = PLAYER.x;
     WATER.y = PLAYER.y;
+    for (let i = WATERCT; i > 0; i--) {
+      image(WATERIMG2, 23 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
+    }
   }
   if (SWORDS[0]) {
     SWORDS[0].x = PLAYER.x;
@@ -1171,6 +1216,21 @@ window.draw = () => {
         FIRE[i].remove();
       }
     }
+  }
+  for (let i = FIRECT; i > 0; i--) {
+    image(FIREIMG2, 24 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
+  }
+  for (let i = SUNCT; i > 0; i--) {
+    image(SUNIMG2, 20 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
+  }
+  for (let i = DEFENSECT; i > 0; i--) {
+    image(DEFENSEIMG2, 19 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50 - 2, windowWidth / 45, windowWidth / 45);
+  }
+  for (let i = HEALTHCT; i > 0; i--) {
+    image(HEALTHIMG2, 18 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 55, windowWidth / 55);
+  }
+  for (let i = SPEEDCT; i > 0; i--) {
+    image(SPEEDIMG2, 17 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 55, windowWidth / 55);
   }
   if (TIME > 15 && !WEAPONCHOSEN) {
     redraw();

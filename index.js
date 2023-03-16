@@ -9,6 +9,7 @@
 // Menu
 // Multiplayer
 // Transfer over loot
+// Magnet power up or item
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js';
 import { getFirestore, addDoc, collection, query, orderBy, limit, getDocs, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.17.2/firebase-firestore.js';
 

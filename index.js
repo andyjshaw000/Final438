@@ -396,7 +396,7 @@ function chooseWeapon() {
   clearInterval(TIMERID);
   fill(0, 0, 0, 180);
   rect(0, 0, windowWidth, windowHeight);
-  let optionsdescription = ["Select a sun orb that you can use to shoot enemies from afar", "Select a sun sword that allows you to slash through multiple enemies at close range"];
+  let optionsdescription = ["Orbs attack enemies from afar. Great for beginners", "Swords slash through multiple enemies at close range"];
   let options = ["Select Sun Orb", "Select Sun Sword"];
   for (let i = 0; i < 2; i++) {
     let buttonback = createButton(optionsdescription[i]);

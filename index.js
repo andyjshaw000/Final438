@@ -4,6 +4,7 @@
 // Sword swing location
 // Water blocking health
 // Outline for contrast
+// Hold down the mouse or auto attack
 // Want to do:
 // Boss health bar
 // Menu

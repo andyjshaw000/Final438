@@ -990,7 +990,7 @@ window.draw = () => {
       }
     }
   }
-  if (mouseIsPressed && frameCount % 20 === 0) {
+  if (mouseIsPressed && frameCount % 18 === 0) {
     // if (!mousePressed()) {
     attackMouse();
     // }

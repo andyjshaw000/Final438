@@ -830,7 +830,7 @@ function spawnEnemy() {
     if (randomnum > (1.88 + 15 / TIME)) {
       enemy = new SHOOTENEMIES.Sprite();
       enemy.life = 100 + Math.pow(TIME, 1.25);
-    } else if (randomnum > (1.78 + 15 / TIME)) {
+    } else if (randomnum > (1.74 + 15 / TIME)) {
       enemy = new FASTENEMIES.Sprite();
       enemy.life = 100 + TIME;
     } else {

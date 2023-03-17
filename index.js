@@ -1002,7 +1002,7 @@ window.draw = () => {
   image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
   image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowHeight / 20);
   image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowHeight / 15);
-  fill(50, 40, 50, TIME / 1 - PLAYERHEALTH * 2);
+  fill(50, 40, 50, TIME / 3 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
   if (x1 < -windowWidth){
     x1 = windowWidth;
@@ -1258,7 +1258,7 @@ window.draw = () => {
     clearInterval(TIMERID);
     if (ENEMIES.length < 1) {
       let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2.5, PLAYER.y);
-      enemy.life = TIME * 300;
+      enemy.life = TIME * 500;
       BGMUSIC.stop();
       BOSSMUSIC.play();
       BOSSMUSIC.loop();

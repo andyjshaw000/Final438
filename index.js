@@ -416,8 +416,8 @@ function resetStats() {
   RESISTANCE = 1;
   FIREBALLDAMAGE = 320;
   WATERFIELDDAMAGE = 4;
-  BOUNCERDAMAGE = 1450;
-  ROTATORDAMAGE = 520;
+  BOUNCERDAMAGE = 1250;
+  ROTATORDAMAGE = 550;
   BOUNCESPEED = 15;
 }
 
@@ -627,7 +627,7 @@ function damagePlayerOrb(shadoworb) {
 }
 
 function damagePlayerCharge(charge) {
-  PLAYERHEALTH -= RESISTANCE * TIME / 220;
+  PLAYERHEALTH -= RESISTANCE * Math.pow(TIME / 200, TIME / 450);
   fill(255, 0, 0, 100);
   rect(0, 0, windowWidth, windowHeight);
 }
@@ -766,7 +766,7 @@ function generateUpgrades() {
         FIREON = true;
       }
       FIRECT += 1;
-      FIREBALLDAMAGE += 50;
+      FIREBALLDAMAGE += 5;
       FIRELVLUPSOUND.play();
       FIRELVLUPSOUND.setVolume(.3);
     } else if (button.attribute === 1) {
@@ -783,9 +783,9 @@ function generateUpgrades() {
       SPEEDLVLUPSOUND.setVolume(.2);
     } else if (button.attribute === 3) {
       HEALTHCT += 1;
-      let healthgained = PLAYERMAXHEALTH / 2;
-      PLAYERMAXHEALTH += healthgained;
-      PLAYERHEALTH += healthgained;
+      // let healthgained = PLAYERMAXHEALTH / 2;
+      PLAYERMAXHEALTH += 50;
+      PLAYERHEALTH += 50;
       HEALTHLVLUPSOUND.play();
       HEALTHLVLUPSOUND.setVolume(.3);
     } else if (button.attribute === 4) {
@@ -799,8 +799,8 @@ function generateUpgrades() {
         new AIR.Sprite();
         AIRON = true;
       } else {
-        BOUNCESPEED += 1;
-        BOUNCERDAMAGE += 300;
+        BOUNCESPEED += .5;
+        BOUNCERDAMAGE += 100;
       }
       AIRLVLUPSOUND.play();
       AIRLVLUPSOUND.setVolume(.25);

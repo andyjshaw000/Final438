@@ -142,7 +142,17 @@ let DEFENSEIMG2;
 let SPEEDIMG2;
 let HEALTHIMG2;
 let KILLS = 0;
+let REGENIMG, MAGNETIMG, DASHIMG, SIPHONIMG, COMBOIMG;
+let REGENCT = 0;
+let MAGNETCT = 0;
+let DASHCT = 0;
+let FLARECT = 0;
+let SIPHONCT = 0;
+let COMBOCT = 0;
+let FLARECD = 0;
+let FLARES = [];
 let DASH = 0;
+let DASHHIT = new Set();
 let DASHCD = 0;
 let DASHDIR = 0;
 let INVULN = 0;
@@ -241,7 +251,13 @@ let PAUSED;
 let PLAYEROLDX;
 let PLAYEROLDY;
 let PAUSE;
-let UPGRADEDESC = {0:["Add a Fireball", "Fireballs seek the nearest shadows and explode on impact, burning everything around them."], 1:["Add an Earthwall", "Indestructible earth surround you, preventing enemies from getting near you. Enemies hit are permanently slowed."], 2:["Increase Speed", "Move faster to dodge and weave past enemies."], 3:["Increase Health", "More health makes you able to take more damage for longer and increase your vision."], 4:["Increase Defense", "Bolster your armor and take less damage from enemies."], 5:["Power up your Airball", "Enemies won't know when it's coming, but when it does, it's too late."], 6:["Increase Sun Damage", "Shadows try to avoid the sun as much as possible, as it does massive damage."], 7:["Power up your Waterfield", "Surround yourself in an endless whirlpool that slows enemies in the tide."]};
+let UPGRADEDESC = {0:["Add a Fireball", "Fireballs seek the nearest shadows and explode on impact, burning everything around them."], 1:["Add an Earthwall", "Indestructible earth surround you, preventing enemies from getting near you. Enemies hit are permanently slowed."], 2:["Increase Speed", "Move faster to dodge and weave past enemies."], 3:["Increase Health", "More health makes you able to take more damage for longer and increase your vision."], 4:["Increase Defense", "Bolster your armor and take less damage from enemies."], 5:["Power up your Airball", "Enemies won't know when it's coming, but when it does, it's too late."], 6:["Increase Sun Damage", "Shadows try to avoid the sun as much as possible, as it does massive damage."], 7:["Power up your Waterfield", "Surround yourself in an endless whirlpool that slows enemies in the tide."],
+  8:["Regeneration", "Slowly heal over time. Each level heals faster."],
+  9:["Soul Magnet", "Pull sun souls in from much farther away."],
+  10:["Shadow Step", "Dash recharges faster, and dashing through shadows cuts them."],
+  11:["Sun Flare", "Every few seconds a ring of sunlight bursts out and scorches nearby shadows."],
+  12:["Soul Siphon", "Heal a little every time you defeat a shadow."],
+  13:["Bloodlust", "Combos last longer and the score multiplier can climb higher."]};
 
 p5.disableFriendlyErrors = true;
 
@@ -253,6 +269,11 @@ window.preload = () => {
   AIRIMG2 = loadImage("images/air.png");
   EARTHIMG2 = loadImage("images/earth.png");
   SUNIMG2 = loadImage("images/sun.png");
+  REGENIMG = loadImage("images/health.png");
+  MAGNETIMG = loadImage("images/experience.png");
+  DASHIMG = loadImage("images/right1.png");
+  SIPHONIMG = loadImage("images/shadoworb.png");
+  COMBOIMG = loadImage("images/sword.png");
   DEFENSEIMG2 = loadImage("images/defense.png", (img) => img.resize(64, 0));
   SPEEDIMG2 = loadImage("images/speed.png", (img) => img.resize(64, 0));
   HEALTHIMG2 = loadImage("images/healthup.png", (img) => img.resize(64, 0));
@@ -501,7 +522,8 @@ function startDash() {
   let dy = (kb.pressing("down") ? 1 : 0) - (kb.pressing("up") ? 1 : 0);
   DASHDIR = dx || dy ? Math.atan2(dy, dx) * 180 / Math.PI : aimAngle();
   DASH = DASHFRAMES;
-  DASHCD = DASHCOOLDOWN;
+  DASHCD = dashCooldown();
+  DASHHIT = new Set();
   PLAYER._destIdx++; // cancel any in-progress move() so it can't pull the dash back
   INVULN = Math.max(INVULN, DASHFRAMES + 6);
   burst(PLAYER.x, PLAYER.y, 10, [180, 230, 255], 3);
@@ -516,6 +538,17 @@ function handleMovement() {
     PLAYER.vel.x = Math.cos(rad) * 15;
     PLAYER.vel.y = Math.sin(rad) * 15;
     burst(PLAYER.x, PLAYER.y, 2, [180, 230, 255], .5);
+    if (DASHCT > 0) {
+      for (let i = ENEMIES.length - 1; i >= 0; i--) {
+        let e = ENEMIES[i];
+        if (!DASHHIT.has(e) && dist(PLAYER.x, PLAYER.y, e.x, e.y) < 30 + 16 * (+e.scale || 1)) {
+          DASHHIT.add(e);
+          e.life -= 300 + 250 * DASHCT;
+          burst(e.x, e.y, 6, [180, 230, 255], 3);
+          enemyDeadUpdate(e);
+        }
+      }
+    }
     DASH -= 1;
     if (DASH === 0) {
       PLAYER.vel.x = 0;
@@ -628,7 +661,8 @@ function bar(x, y, w, h, pct, rgb) {
 
 function drawPowers() {
   let powers = [[FIREIMG2, FIRECT], [EARTHIMG2, EARTHCT], [AIRIMG2, AIRCT], [WATERIMG2, WATERCT],
-    [SUNIMG2, SUNCT], [SPEEDIMG2, SPEEDCT], [HEALTHIMG2, HEALTHCT], [DEFENSEIMG2, DEFENSECT]].filter((p) => p[1] > 0);
+    [SUNIMG2, SUNCT], [SPEEDIMG2, SPEEDCT], [HEALTHIMG2, HEALTHCT], [DEFENSEIMG2, DEFENSECT],
+    [REGENIMG, REGENCT], [MAGNETIMG, MAGNETCT], [DASHIMG, DASHCT], [SUNIMG2, FLARECT], [SIPHONIMG, SIPHONCT], [COMBOIMG, COMBOCT]].filter((p) => p[1] > 0);
   let size = 40;
   let gap = 8;
   let x = windowWidth - 20 - powers.length * (size + gap) + gap;
@@ -689,6 +723,7 @@ function drawHUD() {
   let [px, py] = toScreen(PLAYER.x, PLAYER.y);
   bar(px - 18, py + 28, 36, 5, PLAYERHEALTH / PLAYERMAXHEALTH, [220, 70, 80]);
   drawPowers();
+  drawDropArrows();
   // Dash meter, bottom left
   let ready = DASHCD === 0;
   let cx = pad + 22;
@@ -699,7 +734,7 @@ function drawHUD() {
   noFill();
   stroke(ready ? color(180, 230, 255) : color(255, 255, 255, 90));
   strokeWeight(4);
-  arc(cx, cy, 36, 36, -HALF_PI, -HALF_PI + TWO_PI * (1 - DASHCD / DASHCOOLDOWN));
+  arc(cx, cy, 36, 36, -HALF_PI, -HALF_PI + TWO_PI * (1 - DASHCD / dashCooldown()));
   noStroke();
   fill(255, 255, 255, ready ? 255 : 140);
   textStyle(BOLD);
@@ -712,7 +747,7 @@ function drawHUD() {
     textSize(14);
     fill(255, 214, 84);
     text(COMBO + " combo  x" + comboMult().toFixed(1), windowWidth - pad, pad + 42);
-    bar(windowWidth - pad - 110, pad + 62, 110, 4, COMBOTIMER / 150, [255, 214, 84]);
+    bar(windowWidth - pad - 110, pad + 62, 110, 4, COMBOTIMER / comboWindow(), [255, 214, 84]);
   }
   // Control reminder for the first stretch of the first run
   if (FIRSTRUN && TIME < 20) {
@@ -915,6 +950,15 @@ function resetStats() {
   PLAYERMAXHEALTH = 100;
   SCORE = 0;
   KILLS = 0;
+  REGENCT = 0;
+  MAGNETCT = 0;
+  DASHCT = 0;
+  FLARECT = 0;
+  SIPHONCT = 0;
+  COMBOCT = 0;
+  FLARECD = 0;
+  FLARES = [];
+  MAGNETRADIUS = 140;
   DASH = 0;
   DASHCD = 0;
   INVULN = 0;
@@ -1214,9 +1258,7 @@ function damagePlayer(PLAYER) {
   if (INVULN > 0) {
     return;
   }
-  PLAYERHEALTH -= RESISTANCE * TIME / 1000;
-  fill(255, 0, 0, 25);
-  rect(0, 0, windowWidth, windowHeight);
+  PLAYERHEALTH -= RESISTANCE * (.03 + TIME / 1200);
 }
 
 function damagePlayerOrb(shadoworb) {
@@ -1224,10 +1266,8 @@ function damagePlayerOrb(shadoworb) {
     shadoworb.remove();
     return;
   }
-  PLAYERHEALTH -= RESISTANCE * TIME / 100;
+  PLAYERHEALTH -= RESISTANCE * (4 + TIME / 40);
   shadoworb.remove();
-  fill(255, 0, 0, 25);
-  rect(0, 0, windowWidth, windowHeight);
 }
 
 function damagePlayerCharge(charge) {
@@ -1237,8 +1277,6 @@ function damagePlayerCharge(charge) {
   INVULN = 40;
   SHAKE = 18;
   PLAYERHEALTH -= RESISTANCE * Math.pow(TIME / 200, TIME / 450);
-  fill(255, 0, 0, 100);
-  rect(0, 0, windowWidth, windowHeight);
 }
 
 function orbToEnemy(weapon, enemy) {
@@ -1350,7 +1388,7 @@ function bombToEnemy(weapon, enemy) {
 
 function comboMult() {
   // Every 10 kills in a row adds x0.5, up to x3. The chain breaks after 2.5 seconds without a kill.
-  return Math.min(3, 1 + Math.floor(COMBO / 10) * .5);
+  return Math.min(3 + COMBOCT, 1 + Math.floor(COMBO / 10) * .5);
 }
 
 function enemyDeadUpdate(enemy) {
@@ -1395,7 +1433,7 @@ function enemyDeadUpdate(enemy) {
       new HEALTHS.Sprite(enemy.x + 10, enemy.y - 10);
     }
     COMBO += 1;
-    COMBOTIMER = 150;
+    COMBOTIMER = comboWindow();
     let gained = Math.ceil(Math.ceil(500 * TIME / windowWidth) * (enemy.elite ? 10 : enemy.kind === "brute" ? 3 : 1) * comboMult());
     burst(enemy.x, enemy.y, enemy.kind === "boss" ? 60 : 10, [40, 20, 60], enemy.kind === "boss" ? 9 : 4);
     popup(enemy.x, enemy.y - 20, "+" + gained);
@@ -1405,6 +1443,9 @@ function enemyDeadUpdate(enemy) {
     enemy.remove();
     SCORE += gained;
     KILLS += 1;
+    if (SIPHONCT > 0 && PLAYERHEALTH > 0) {
+      PLAYERHEALTH = Math.min(PLAYERMAXHEALTH, PLAYERHEALTH + .35 * SIPHONCT);
+    }
   }
 }
 
@@ -1427,21 +1468,25 @@ function checkLevel() {
   }
 }
 
-const UPGRADEICONS = ["images/fire.png", "images/earth.png", "images/speed.png", "images/healthup.png", "images/defense.png", "images/air.png", "images/sun.png", "images/water1.png"];
-const UPGRADEACCENTS = ["#FF6A3D", "#C08A4B", "#FFE14D", "#FF4D5E", "#B8C0CC", "#7FF5EE", "#FFD654", "#5B9BFF"];
+const UPGRADEICONS = ["images/fire.png", "images/earth.png", "images/speed.png", "images/healthup.png", "images/defense.png", "images/air.png", "images/sun.png", "images/water1.png",
+  "images/health.png", "images/experience.png", "images/right1.png", "images/sun.png", "images/shadoworb.png", "images/sword.png"];
+const UPGRADEACCENTS = ["#FF6A3D", "#C08A4B", "#FFE14D", "#FF4D5E", "#B8C0CC", "#7FF5EE", "#FFD654", "#5B9BFF",
+  "#5BE38A", "#FFB347", "#9FD8FF", "#FF9E40", "#C77DFF", "#FF5C8A"];
+const UPGRADEMAX = [99, 99, 8, 99, 10, 99, 99, 99, 5, 4, 4, 6, 5, 4];
 
 function upgradeLevel(id) {
-  return [FIRECT, EARTHCT, SPEEDCT, HEALTHCT, DEFENSECT, AIRCT, SUNCT, WATERCT][id];
+  return [FIRECT, EARTHCT, SPEEDCT, HEALTHCT, DEFENSECT, AIRCT, SUNCT, WATERCT, REGENCT, MAGNETCT, DASHCT, FLARECT, SIPHONCT, COMBOCT][id];
 }
 
 function generateUpgrades() {
-  let ids = [0, 1, 2, 3, 4, 5, 6, 7].sort(() => Math.random() - .5).slice(0, 3);
+  // Offer 3 different powers that aren't maxed out yet.
+  let ids = UPGRADEMAX.map((m, id) => id).filter((id) => upgradeLevel(id) < UPGRADEMAX[id]).sort(() => Math.random() - .5).slice(0, 3);
   showCards("Level up! Pick a power", ids.map((id) => ({
     title: UPGRADEDESC[id][0],
     desc: UPGRADEDESC[id][1],
     icon: UPGRADEICONS[id],
     accent: UPGRADEACCENTS[id],
-    tag: upgradeLevel(id) === 0 ? "New" : "Lv " + (upgradeLevel(id) + 1)
+    tag: upgradeLevel(id) === 0 ? "New" : upgradeLevel(id) + 1 === UPGRADEMAX[id] ? "Max" : "Lv " + (upgradeLevel(id) + 1)
   })), (i) => applyUpgrade(ids[i]));
 }
 
@@ -1506,7 +1551,94 @@ function applyUpgrade(id) {
     WATERCT += 1;
     WATERLVLUPSOUND.play();
     WATERLVLUPSOUND.setVolume(.2);
+  } else if (id === 8) {
+    REGENCT += 1;
+    HEALTHLVLUPSOUND.play();
+    HEALTHLVLUPSOUND.setVolume(.3);
+  } else if (id === 9) {
+    MAGNETCT += 1;
+    MAGNETRADIUS += 90;
+    SUNLVLUPSOUND.play();
+    SUNLVLUPSOUND.setVolume(.1);
+  } else if (id === 10) {
+    DASHCT += 1;
+    SPEEDLVLUPSOUND.play();
+    SPEEDLVLUPSOUND.setVolume(.2);
+  } else if (id === 11) {
+    FLARECT += 1;
+    FLARECD = 30;
+    FIRELVLUPSOUND.play();
+    FIRELVLUPSOUND.setVolume(.3);
+  } else if (id === 12) {
+    SIPHONCT += 1;
+    HEALTHLVLUPSOUND.play();
+    HEALTHLVLUPSOUND.setVolume(.3);
+  } else if (id === 13) {
+    COMBOCT += 1;
+    SUNLVLUPSOUND.play();
+    SUNLVLUPSOUND.setVolume(.1);
   }
+}
+
+function dashCooldown() {
+  return Math.round(DASHCOOLDOWN * Math.pow(.8, DASHCT));
+}
+
+function comboWindow() {
+  return 150 + 45 * COMBOCT;
+}
+
+function updateFlare() {
+  // Sun Flare: an expanding ring of light that damages each shadow it passes once.
+  if (FLARECT > 0 && !MODALOPEN) {
+    FLARECD -= 1;
+    if (FLARECD <= 0) {
+      FLARES.push({x: PLAYER.x, y: PLAYER.y, r: 10, max: 130 + 25 * FLARECT, hit: new Set()});
+      FLARECD = Math.max(100, 260 - 30 * FLARECT);
+    }
+  }
+  for (let i = FLARES.length - 1; i >= 0; i--) {
+    let f = FLARES[i];
+    f.r += 9;
+    for (let j = ENEMIES.length - 1; j >= 0; j--) {
+      let e = ENEMIES[j];
+      if (!f.hit.has(e) && dist(f.x, f.y, e.x, e.y) < f.r) {
+        f.hit.add(e);
+        e.life -= 350 + 175 * FLARECT;
+        burst(e.x, e.y, 4, [255, 190, 70], 2.5);
+        enemyDeadUpdate(e);
+      }
+    }
+    if (f.r >= f.max) {
+      FLARES.splice(i, 1);
+    }
+  }
+}
+
+function drawFlares() {
+  push();
+  noFill();
+  for (let f of FLARES) {
+    let [sx, sy] = toScreen(f.x, f.y);
+    let a = 255 * (1 - f.r / f.max);
+    stroke(255, 200, 80, a);
+    strokeWeight(6);
+    circle(sx, sy, f.r * 2);
+    stroke(255, 245, 200, a * .7);
+    strokeWeight(2);
+    circle(sx, sy, f.r * 2 - 8);
+  }
+  pop();
+}
+
+function targetEnemies() {
+  // How many shadows should be on screen right now. It climbs steadily, and a
+  // 60 second wave swings it between a breather (0.65x) and a push (1.35x),
+  // so there's always a lull coming or a rush building.
+  let screenScale = Math.min(1.6, Math.max(.7, windowWidth * windowHeight / (1280 * 720)));
+  let base = (5 + TIME * .2 + Math.pow(TIME / 60, 2) * 1.5) * screenScale;
+  let wave = 1 + .35 * Math.sin(TIME * Math.PI / 30 - Math.PI / 2);
+  return Math.min(140 * screenScale, base * wave);
 }
 
 function pickKind() {
@@ -1712,6 +1844,91 @@ function outlineSprite(e, rgb, thick) {
   for (let o of OUTLINE) {
     image(sil, sx + o[0] * thick, sy + o[1] * thick, w, h);
   }
+}
+
+function soulDraw() {
+  // Sun soul: a bobbing, pulsing orb that pops in when it drops.
+  let age = Math.max(.05, Math.min(1, (frameCount - this._born) / 12));
+  let ph = frameCount / 12 + this.idNum;
+  translate(0, Math.sin(ph) * 2.5);
+  scale(age);
+  noStroke();
+  fill(255, 190, 60, 45 + 25 * Math.sin(ph * 1.7));
+  circle(0, 0, 20 + 3 * Math.sin(ph * 1.7));
+  fill(255, 214, 84);
+  circle(0, 0, 8);
+  fill(255, 250, 220);
+  circle(-1, -1, 3.5);
+  fill(255, 240, 180, 200);
+  circle(Math.cos(ph * 1.3) * 9, Math.sin(ph * 1.3) * 9, 2);
+}
+
+function healthDraw() {
+  // Health: a heartbeat pulse with a soft red glow.
+  let age = Math.max(.05, Math.min(1, (frameCount - this._born) / 12));
+  let t = (frameCount % 60) / 60;
+  let beat = t < .12 ? Math.sin(t / .12 * Math.PI) : t > .2 && t < .32 ? .6 * Math.sin((t - .2) / .12 * Math.PI) : 0;
+  translate(0, Math.sin(frameCount / 15 + this.idNum) * 3);
+  noStroke();
+  fill(255, 60, 80, 50 + 60 * beat);
+  circle(0, 0, 44 + 10 * beat);
+  scale(age * (1 + .15 * beat));
+  Sprite.prototype._draw.call(this);
+}
+
+function bombDraw() {
+  // Bomb: a wobble and a flickering warning glow, with sparks off the fuse.
+  let age = Math.max(.05, Math.min(1, (frameCount - this._born) / 12));
+  let flick = Math.random();
+  translate(0, Math.sin(frameCount / 15 + this.idNum) * 3);
+  rotate(Math.sin(frameCount / 8 + this.idNum) * 10);
+  noStroke();
+  fill(255, 120, 30, 40 + 50 * flick);
+  circle(0, 0, 40 + 6 * flick);
+  scale(age);
+  Sprite.prototype._draw.call(this);
+  if (frameCount % 6 === 0) {
+    burst(this.x + 6, this.y - 10, 1, [255, 200, 80], 1.2);
+  }
+}
+
+function styleDrops() {
+  for (let [group, fn] of [[EXP, soulDraw], [HEALTHS, healthDraw], [BOMBS, bombDraw]]) {
+    for (let d of group) {
+      if (!d._styled) {
+        d._styled = true;
+        d._born = frameCount;
+        d.draw = fn;
+      }
+    }
+  }
+}
+
+function drawDropArrows() {
+  // Point to health and bombs that dropped off screen so you don't miss them.
+  push();
+  noStroke();
+  for (let [group, rgb] of [[HEALTHS, [255, 70, 90]], [BOMBS, [255, 150, 40]]]) {
+    for (let d of group) {
+      let [sx, sy] = toScreen(d.x, d.y);
+      if (sx > 0 && sy > 0 && sx < windowWidth && sy < windowHeight) {
+        continue;
+      }
+      if (dist(d.x, d.y, PLAYER.x, PLAYER.y) > Math.max(windowWidth, windowHeight) * 1.5) {
+        continue;
+      }
+      let a = Math.atan2(sy - windowHeight / 2, sx - windowWidth / 2);
+      let ex = constrain(sx, 30, windowWidth - 30);
+      let ey = constrain(sy, 90, windowHeight - 30);
+      push();
+      translate(ex, ey);
+      rotate(a);
+      fill(rgb[0], rgb[1], rgb[2], 160 + 80 * Math.sin(frameCount / 8));
+      triangle(12, 0, -8, -9, -8, 9);
+      pop();
+    }
+  }
+  pop();
 }
 
 function drawEnemyOutlines() {
@@ -1921,9 +2138,9 @@ window.draw = () => {
     SINCEHIT = 0;
   }
   SINCEHIT += 1;
-  // Slow regen after 4 seconds without taking damage, so one bad moment isn't fatal.
-  if (SINCEHIT > 240 && PLAYERHEALTH > 0 && PLAYERHEALTH < PLAYERMAXHEALTH) {
-    PLAYERHEALTH = Math.min(PLAYERMAXHEALTH, PLAYERHEALTH + PLAYERMAXHEALTH / 3000);
+  // Regeneration upgrade: about 1% of max health per second per level.
+  if (REGENCT > 0 && PLAYERHEALTH > 0 && PLAYERHEALTH < PLAYERMAXHEALTH && !MODALOPEN) {
+    PLAYERHEALTH = Math.min(PLAYERMAXHEALTH, PLAYERHEALTH + PLAYERMAXHEALTH * REGENCT / 6000);
   }
   PREVHEALTH = PLAYERHEALTH;
   if (INVULN > 0) {
@@ -1952,6 +2169,9 @@ window.draw = () => {
   }
   clear();
   drawBackground();
+  styleDrops();
+  updateFlare();
+  drawFlares();
   drawEnemyOutlines();
   drawSwordTrail();
   drawEffects();
@@ -1960,12 +2180,11 @@ window.draw = () => {
   rect(0, 0, windowWidth, windowHeight);
   SPAWNCD -= 1;
   if (SPAWNCD <= 0 && WEAPONCHOSEN && !BOSSSTART) {
-    SPAWNCD = TIME < 60 ? 110 : 200;
-    let count = Math.max(2, TIME * Math.pow(windowWidth, 2) / 20000000);
-    for (let i = 0; i < count; i++) {
-      if (ENEMIES.length < Math.pow(windowWidth, 2) / 20000) {
-        spawnEnemy();
-      }
+    // Top up toward a target count instead of dumping fixed batches.
+    SPAWNCD = 20;
+    let deficit = Math.floor(targetEnemies() - ENEMIES.length);
+    for (let i = 0; i < Math.min(3, deficit); i++) {
+      spawnEnemy();
     }
   }
   updateEvents();

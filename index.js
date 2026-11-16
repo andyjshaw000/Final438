@@ -25,52 +25,42 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-function submitScore() {
+function submitScore(name) {
   try {
-      const docRef = addDoc(collection(db, "players"), {
-        username: (NAMEINPUT.value().trim() || "Anonymous").slice(0, 20),
-        score: SCORE,
-      });
+    addDoc(collection(db, "players"), {
+      username: (String(name || "").trim() || "Anonymous").slice(0, 20),
+      score: SCORE,
+    });
   } catch (e) {
     console.error(e);
   }
 }
 
 async function getScore() {
-  const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
-  const querySnapshot = await getDocs(q);
-  const data = {allScores: []};
-  querySnapshot.forEach((doc) => {
-      data.allScores.push(doc.data());
-  });
-  if (LEADERS) {
-    LEADERS.html("Leaderboard");
-    let emptyli = createDiv("");
-    emptyli.style("text-align", "left");
-    emptyli.style("display", "flex");
-    emptyli.style("padding-top", windowHeight / 40 + "px");
-    emptyli.style("font-size", windowWidth / 60 + "px");
-    let namediv = createDiv("Name");
-    namediv.size(windowWidth / 3, windowHeight / 40);
-    let scorediv = createDiv("Score");
-    scorediv.size(windowWidth / 6, windowHeight / 40);
-    emptyli.child(namediv);
-    emptyli.child(scorediv);
-    LEADERS.child(emptyli);
-    data.allScores.forEach(({username, score}) => {
-      let li = createDiv("");
-      li.style("text-align", "left");
-      li.style("display", "flex");
-      li.style("padding-top", windowHeight / 40 + "px");
-      li.style("font-size", windowWidth / 80 + "px");
-      let liname = createDiv(username);
-      liname.size(windowWidth / 3, windowHeight / 40);
-      let liscore = createDiv(score);
-      liscore.size(windowWidth / 6, windowHeight / 40);
-      li.child(liname);
-      li.child(liscore);
-      LEADERS.child(li);
+  let list = document.getElementById("lb-list");
+  if (!list) {
+    return;
+  }
+  try {
+    const q = query(collection(db, "players"), orderBy("score", "desc"), limit(5));
+    const snap = await getDocs(q);
+    list.innerHTML = "";
+    snap.forEach((doc) => {
+      let {username, score} = doc.data();
+      let li = document.createElement("li");
+      let name = document.createElement("span");
+      // textContent, not innerHTML, so a player name can't inject markup
+      name.textContent = String(username || "Anonymous").slice(0, 20);
+      let pts = document.createElement("b");
+      pts.textContent = Number(score || 0).toLocaleString("en-US");
+      li.append(name, pts);
+      list.appendChild(li);
     });
+    if (!list.children.length) {
+      list.innerHTML = "<li class='lb-empty'>No scores yet</li>";
+    }
+  } catch (e) {
+    list.innerHTML = "<li class='lb-empty'>Leaderboard unavailable</li>";
   }
 }
 
@@ -137,8 +127,6 @@ const SWORDFRAMES = 10;
 const MAXPARTICLES = 350;
 let MODALOPEN = false;
 let WASRUNNING = false;
-let NAMEINPUT;
-let LEADERS;
 let BOSSSTART;
 let WEAPONCHOSEN;
 let CHOSEORBS;
@@ -153,8 +141,7 @@ let SUNIMG2;
 let DEFENSEIMG2;
 let SPEEDIMG2;
 let HEALTHIMG2;
-let MOUSEIMG;
-let WASDIMG;
+let KILLS = 0;
 let PLAYER;
 let PLAYERHEALTH;
 let SCORE;
@@ -257,11 +244,9 @@ window.preload = () => {
   AIRIMG2 = loadImage("images/air.png");
   EARTHIMG2 = loadImage("images/earth.png");
   SUNIMG2 = loadImage("images/sun.png");
-  DEFENSEIMG2 = loadImage("images/defense.png");
-  SPEEDIMG2 = loadImage("images/speed.png");
-  HEALTHIMG2 = loadImage("images/healthup.png");
-  MOUSEIMG = loadImage("images/mouse.png");
-  WASDIMG = loadImage("images/wasd.png");
+  DEFENSEIMG2 = loadImage("images/defense.png", (img) => img.resize(64, 0));
+  SPEEDIMG2 = loadImage("images/speed.png", (img) => img.resize(64, 0));
+  HEALTHIMG2 = loadImage("images/healthup.png", (img) => img.resize(64, 0));
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
   PLAYERSTANDRIGHTIMG = loadAnimation("images/right1.png");
   PLAYERRIGHTIMG = loadAnimation("images/right2.png", 3);
@@ -322,11 +307,8 @@ function initialize(withMenu) {
   MODALOPEN = false;
   PAUSE = createButton("Pause");
   PAUSE.removeAttribute("disabled");
-  PAUSE.style("border-radius", windowWidth / 220 + "px");
-  PAUSE.style("font-size", windowWidth / 120 + "px");
-  PAUSE.style("border", "none");
-  PAUSE.size(windowWidth / 20, windowHeight / 30);
-  PAUSE.position(windowWidth / 35, windowHeight / 15);
+  PAUSE.class("hud-btn");
+  PAUSE.position(20, 76);
   PAUSE.mousePressed(togglePause);
   PLAYER = new Sprite(windowWidth / 2, windowHeight / 2, 20, 40);
   resetStats();
@@ -563,6 +545,11 @@ function togglePause() {
 }
 
 window.keyPressed = () => {
+  let again = document.querySelector(".death-again");
+  if (again && keyCode === ENTER && document.activeElement.tagName !== "INPUT") {
+    again.click();
+    return;
+  }
   if (CARDPICK && "123".includes(key)) {
     CARDPICK(parseInt(key, 10) - 1);
     return;
@@ -578,13 +565,105 @@ window.windowResized = () => {
   initMotes();
 };
 
+function fmtTime(t) {
+  let m = Math.floor(t / 60);
+  let sec = t % 60;
+  return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+}
+
+function bar(x, y, w, h, pct, rgb) {
+  noStroke();
+  fill(0, 0, 0, 150);
+  rect(x, y, w, h, h / 2);
+  if (pct > 0) {
+    fill(rgb[0], rgb[1], rgb[2]);
+    rect(x, y, Math.max(h, w * constrain(pct, 0, 1)), h, h / 2);
+    fill(255, 255, 255, 50);
+    rect(x + h / 2, y + 2, Math.max(0, w * constrain(pct, 0, 1) - h), h / 3, h / 6);
+  }
+}
+
+function drawPowers() {
+  let powers = [[FIREIMG2, FIRECT], [EARTHIMG2, EARTHCT], [AIRIMG2, AIRCT], [WATERIMG2, WATERCT],
+    [SUNIMG2, SUNCT], [SPEEDIMG2, SPEEDCT], [HEALTHIMG2, HEALTHCT], [DEFENSEIMG2, DEFENSECT]].filter((p) => p[1] > 0);
+  let size = 40;
+  let gap = 8;
+  let x = windowWidth - 20 - powers.length * (size + gap) + gap;
+  let y = windowHeight - 20 - size;
+  for (let [img, count] of powers) {
+    noStroke();
+    fill(0, 0, 0, 150);
+    rect(x, y, size, size, 8);
+    imageMode(CENTER);
+    image(img, x + size / 2, y + size / 2 - 2, size * .6, size * .6);
+    imageMode(CORNER);
+    fill(255, 214, 84);
+    textSize(11);
+    textStyle(BOLD);
+    textAlign(RIGHT, BOTTOM);
+    text(count, x + size - 4, y + size - 2);
+    x += size + gap;
+  }
+}
+
+function drawHUD() {
+  push();
+  textFont("Helvetica");
+  let pad = 20;
+  // Health, top left
+  let hw = Math.min(260, windowWidth * .2);
+  bar(pad, pad, hw, 16, PLAYERHEALTH / PLAYERMAXHEALTH, PLAYERHEALTH < PLAYERMAXHEALTH * .25 ? [235, 60, 60] : [220, 70, 80]);
+  fill(255);
+  textSize(11);
+  textStyle(BOLD);
+  textAlign(LEFT, CENTER);
+  text(Math.max(0, Math.ceil(PLAYERHEALTH)) + " / " + PLAYERMAXHEALTH, pad + 8, pad + 8.5);
+  textStyle(NORMAL);
+  textSize(14);
+  fill(255, 255, 255, 220);
+  text(fmtTime(TIME), pad, pad + 32);
+  // Level and experience, top center
+  let xw = Math.min(520, windowWidth * .38);
+  let xx = (windowWidth - xw) / 2;
+  bar(xx, pad + 12, xw, 10, LVL - Math.floor(LVL), [255, 214, 84]);
+  fill(255, 214, 84);
+  stroke(40, 25, 0);
+  strokeWeight(3);
+  textStyle(BOLD);
+  textSize(15);
+  textAlign(CENTER, BOTTOM);
+  text("Level " + Math.floor(LVL), windowWidth / 2, pad + 8);
+  // Score, top right
+  noStroke();
+  textAlign(RIGHT, TOP);
+  textSize(11);
+  fill(255, 255, 255, 170);
+  text("SCORE", windowWidth - pad, pad - 2);
+  textSize(24);
+  fill(255);
+  text(SCORE.toLocaleString("en-US"), windowWidth - pad, pad + 12);
+  // Small health bar under the player
+  let [px, py] = toScreen(PLAYER.x, PLAYER.y);
+  bar(px - 18, py + 28, 36, 5, PLAYERHEALTH / PLAYERMAXHEALTH, [220, 70, 80]);
+  drawPowers();
+  // Control reminder for the first stretch of the first run
+  if (FIRSTRUN && TIME < 20) {
+    textStyle(NORMAL);
+    textSize(12);
+    textAlign(LEFT, BOTTOM);
+    fill(255, 255, 255, 170);
+    text("WASD move   ·   Click or hold to attack   ·   P pause", pad, windowHeight - pad);
+  }
+  pop();
+}
+
 function drawEliteBar() {
   if (!ELITE || ELITE.removed || BOSSSTART) {
     return;
   }
   let w = windowWidth / 4;
   let x = (windowWidth - w) / 2;
-  let y = windowHeight / 6.2;
+  let y = 92;
   push();
   noStroke();
   fill(0, 0, 0, 150);
@@ -607,7 +686,7 @@ function drawBossBar() {
   }
   let w = windowWidth * 2 / 5;
   let x = windowWidth * 3 / 10;
-  let y = windowHeight / 6.2;
+  let y = 92;
   let pct = constrain(BOSSENEMIES[0].life / BOSSMAXLIFE, 0, 1);
   push();
   noStroke();
@@ -767,6 +846,7 @@ function resetStats() {
   PLAYERHEALTH = 100;
   PLAYERMAXHEALTH = 100;
   SCORE = 0;
+  KILLS = 0;
   EXPPOINTS = 10;
   LVL = 1;
   TIME = 1;
@@ -803,6 +883,47 @@ function resetStats() {
   BOUNCERDAMAGE = 1250;
   ROTATORDAMAGE = 550;
   BOUNCESPEED = 15;
+}
+
+function showDeathScreen() {
+  let newBest = saveBest(SCORE);
+  let wrap = document.createElement("div");
+  wrap.className = "cards-modal death";
+  wrap.innerHTML =
+    "<h2>The shadows got you</h2>" +
+    "<div class='death-card'>" +
+      "<div class='death-stats'>" +
+        "<div><span>Score</span><b>" + SCORE.toLocaleString("en-US") + "</b></div>" +
+        "<div><span>Survived</span><b>" + fmtTime(TIME) + "</b></div>" +
+        "<div><span>Level</span><b>" + Math.floor(LVL) + "</b></div>" +
+        "<div><span>Shadows</span><b>" + KILLS.toLocaleString("en-US") + "</b></div>" +
+      "</div>" +
+      "<p class='death-best'>" + (newBest ? "New personal best!" : "Your best: " + bestScore().toLocaleString("en-US")) + "</p>" +
+      "<h3>Leaderboard</h3><ol id='lb-list'><li class='lb-empty'>Loading...</li></ol>" +
+      "<form class='death-submit'><input maxlength='20' placeholder='Your name' aria-label='Your name'><button type='submit'>Submit Score</button></form>" +
+      "<button class='death-again'>Play Again</button>" +
+    "</div>";
+  document.body.appendChild(wrap);
+  let form = wrap.querySelector("form");
+  let input = form.querySelector("input");
+  form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    submitScore(input.value);
+    form.innerHTML = "<p class='death-best'>Score submitted</p>";
+  });
+  let again = wrap.querySelector(".death-again");
+  again.addEventListener("click", () => {
+    wrap.remove();
+    PAUSE.removeAttribute("disabled");
+    allSprites.remove();
+    clear();
+    LOSESOUND.stop();
+    FIRSTRUN = false;
+    initialize(false);
+    loop();
+  });
+  again.focus();
+  getScore();
 }
 
 function showCards(heading, cards, onPick) {
@@ -1184,6 +1305,7 @@ function enemyDeadUpdate(enemy) {
     }
     enemy.remove();
     SCORE += gained;
+    KILLS += 1;
   }
 }
 
@@ -1456,44 +1578,67 @@ function explodeBomber(enemy, hurtPlayer) {
   }
 }
 
-function drawEnemyHalos() {
-  // Colored glows under every shadow so they read clearly against the map.
-  // Color tells you the type at a glance. Drawn before sprites so it sits underneath.
+function silhouette(img, rgb) {
+  // A solid-color copy of a sprite frame, cached per frame and color.
+  let cache = img._sil || (img._sil = {});
+  let key = rgb.join(",");
+  if (!cache[key]) {
+    let g = createGraphics(img.width, img.height);
+    g.image(img, 0, 0);
+    let ctx = g.drawingContext;
+    ctx.globalCompositeOperation = "source-in";
+    ctx.fillStyle = "rgb(" + key + ")";
+    ctx.fillRect(0, 0, img.width, img.height);
+    cache[key] = g;
+  }
+  return cache[key];
+}
+
+const OUTLINE = [[1, 0], [-1, 0], [0, 1], [0, -1], [.7, .7], [-.7, .7], [.7, -.7], [-.7, -.7]];
+
+function outlineSprite(e, rgb, thick) {
+  let ani = e.ani;
+  let img = ani && ani[ani.frame];
+  if (!img || !img.width) {
+    return;
+  }
+  let [sx, sy] = toScreen(e.x, e.y);
+  if (sx < -100 || sy < -100 || sx > windowWidth + 100 || sy > windowHeight + 100) {
+    return;
+  }
+  let sc = +e.scale || 1;
+  let w = img.width * sc;
+  let h = img.height * sc;
+  let sil = silhouette(img, rgb);
+  for (let o of OUTLINE) {
+    image(sil, sx + o[0] * thick, sy + o[1] * thick, w, h);
+  }
+}
+
+function drawEnemyOutlines() {
+  // A colored outline around every shadow so it reads clearly against the map.
+  // The color tells you the type. Drawn before sprites so it sits behind them.
   push();
-  noStroke();
-  let pulse = Math.sin(frameCount / 6);
+  imageMode(CENTER);
   for (let e of ENEMIES) {
-    let [sx, sy] = toScreen(e.x, e.y);
-    if (sx < -80 || sy < -80 || sx > windowWidth + 80 || sy > windowHeight + 80) {
-      continue;
-    }
-    let c = HALO[e.kind] || HALO.basic;
-    let size = 40 * (e.scale || 1) * (e.kind === "boss" ? 3 : 1);
-    fill(c[0], c[1], c[2], 45);
-    circle(sx, sy + 4, size * 1.35);
-    fill(c[0], c[1], c[2], 90);
-    circle(sx, sy + 4, size * .85);
-    if (e.elite) {
-      noFill();
-      stroke(255, 214, 84, 200);
-      strokeWeight(3);
-      circle(sx, sy + 4, size * 1.25 + pulse * 4);
-      noStroke();
-    }
+    outlineSprite(e, e.elite ? [255, 214, 84] : (HALO[e.kind] || HALO.basic), e.elite || e.kind === "boss" ? 2.5 : 1.5);
+  }
+  for (let o of SHADOWORBS) {
+    outlineSprite(o, [200, 80, 255], 1);
+  }
+  pop();
+  push();
+  for (let e of ENEMIES) {
     if (e.kind === "bomber" && e.fuse !== undefined) {
+      let [sx, sy] = toScreen(e.x, e.y);
+      noStroke();
       fill(255, 60, 20, 50 + 40 * Math.abs(Math.sin(frameCount / 3)));
       circle(sx, sy, 190 * (1 - e.fuse / 50));
       noFill();
       stroke(255, 80, 30, 200);
       strokeWeight(2);
       circle(sx, sy, 190);
-      noStroke();
     }
-  }
-  for (let o of SHADOWORBS) {
-    let [sx, sy] = toScreen(o.x, o.y);
-    fill(200, 80, 255, 90);
-    circle(sx, sy, 34);
   }
   pop();
 }
@@ -1640,71 +1785,7 @@ window.draw = () => {
     LOSESOUND.play();
     LOSESOUND.loop();
     LOSESOUND.setVolume(.3);
-    let buttonback = createButton("");
-    buttonback.style("border-radius", windowWidth / 60 + "px");
-    buttonback.style("background-image", "radial-gradient(red 21%, black 80%)");
-    buttonback.style("border", "none");
-    buttonback.size(windowWidth / 2, 2 * windowHeight / 3);
-    buttonback.position(windowWidth / 6 + 2 / 24 * windowWidth, windowHeight / 5);
-    let newBest = saveBest(SCORE);
-    let div = createDiv("Your Score: " + SCORE.toLocaleString("en-US") +
-      (newBest ? "<br><span style='color:#FFD654'>New personal best!</span>" : "<br><span style='font-size:.7em'>Best: " + bestScore().toLocaleString("en-US") + "</span>"));
-    div.style("color", "black");
-    div.style("font-size", windowWidth / 60 + "px");
-    div.size(windowWidth / 6, windowHeight / 15);
-    div.style("text-align","center");
-    div.position(windowWidth / 3 + 3 * windowWidth / 26 - 2 * windowWidth / 70, 7 * windowHeight / 11);
-    LEADERS = createDiv("Leaderboard");
-    LEADERS.style("color", "white");
-    LEADERS.style("font-size", windowWidth / 45 + "px");
-    LEADERS.size(windowWidth / 3, windowHeight / 15);
-    LEADERS.style("text-align","center");
-    LEADERS.position(windowWidth / 3 + windowWidth / 26 - 2 * windowWidth / 70, windowHeight / 5 + 60);
-    NAMEINPUT = createInput("");
-    NAMEINPUT.attribute("maxlength", "20");
-    NAMEINPUT.attribute("placeholder", "Your name");
-    NAMEINPUT.position(windowWidth / 3 + 2 * windowWidth / 26, 4 * windowHeight / 5 - 80);
-    NAMEINPUT.style("border-radius", windowWidth / 280 + "px");
-    NAMEINPUT.style("background-color", "white");
-    NAMEINPUT.style("color", "red");
-    NAMEINPUT.style("border", "black 2px solid");
-    NAMEINPUT.size(windowWidth / 10, windowHeight / 20);
-    let submitButton = createButton("Submit Score");
-    submitButton.position(windowWidth / 3 + 5 * windowWidth / 26, 4 * windowHeight / 5 - 80);
-    submitButton.style("border-radius", windowWidth / 280 + "px");
-    submitButton.style("background-color", "white");
-    submitButton.style("color", "red");
-    submitButton.style("border", "black 2px solid");
-    submitButton.style("font-size", windowWidth / 120 + "px");
-    submitButton.size(windowWidth / 15, windowHeight / 17);
-    submitButton.mousePressed(function() {
-      submitScore();
-      submitButton.remove();
-      NAMEINPUT.remove();
-    });
-    getScore();
-    let playagain = createButton("Play Again");
-    playagain.style("border-radius", windowWidth / 280 + "px");
-    playagain.style("background-color", "black");
-    playagain.style("color", "white");
-    playagain.style("border", "none");
-    playagain.size(windowWidth / 10, windowHeight / 15);
-    playagain.position(windowWidth / 3 + 3 * windowWidth / 26, 4 * windowHeight / 5 - 20);
-    playagain.mousePressed(() => {
-      PAUSE.removeAttribute("disabled");
-      allSprites.remove();
-      clear();
-      LOSESOUND.stop();
-      FIRSTRUN = false;
-      initialize(false);
-      loop();
-      buttonback.remove();
-      div.remove();
-      playagain.remove();
-      LEADERS.remove();
-      NAMEINPUT.remove();
-      submitButton.remove();
-    });
+    showDeathScreen();
   }
   if (frameCount % 60 === 0) {
     for (let i = 0; i < ORBS.length; i ++) {
@@ -1727,14 +1808,21 @@ window.draw = () => {
     attackMouse();
     // }
   }
+  // Move the camera before drawing anything so the background, outlines, and
+  // effects line up with the sprites p5play draws at the end of the frame.
+  camera.x = PLAYER.x;
+  camera.y = PLAYER.y;
+  if (SHAKE > 0) {
+    camera.x += (Math.random() - .5) * SHAKE;
+    camera.y += (Math.random() - .5) * SHAKE;
+    SHAKE -= 1;
+  }
   clear();
   drawBackground();
-  drawEnemyHalos();
+  drawEnemyOutlines();
   drawSwordTrail();
   drawEffects();
   drawOverlays();
-  image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowHeight / 20);
-  image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowHeight / 15);
   fill(50, 40, 50, TIME / 3 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
   SPAWNCD -= 1;
@@ -1833,29 +1921,7 @@ window.draw = () => {
     text(hint, windowWidth / 2, windowHeight / 4);
     pop();
   }
-  textAlign(CENTER);
-  noFill();
-  rect(windowWidth * 3 / 10, windowHeight / 10, windowWidth * 2 / 5, windowHeight / 20);
-  rect(windowWidth * 97 / 200, windowHeight / 1.8, windowWidth * 3 / 100, windowHeight / 60);
-  fill("green");
-  rect(windowWidth * 3 / 10, windowHeight / 10, map(LVL - Math.floor(LVL), 0, 1, 0, windowWidth * 2 / 5), windowHeight / 20);
-  fill("red");
-  rect(windowWidth * 97 / 200, windowHeight / 1.8, map(PLAYERHEALTH, 0, PLAYERMAXHEALTH, 0, windowWidth * 3 / 100), windowHeight / 60);
-  fill("white");
-  stroke(45, 45, 45);
-  strokeWeight(2.5);
-  textSize(windowWidth / 70);
-  text("Score: " + SCORE.toLocaleString("en-US"), windowWidth * 11 / 13, windowHeight / 20);
-  let minutes = Math.floor(TIME / 60);
-  let extraSeconds = TIME % 60;
-  minutes = minutes < 10 ? "0" + minutes : minutes;
-  extraSeconds = extraSeconds < 10 ? "0" + extraSeconds : extraSeconds;
-  text("Time: " + minutes + ":" + extraSeconds, windowWidth / 15, windowHeight / 20);
-  text(": Attack", windowWidth / 12.4, 18.9 * windowHeight / 20);
-  text(": Move", windowWidth / 11.8, 17.4 * windowHeight / 20);
-  text("Health: " + Math.ceil(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
-  textSize(windowWidth / 60);
-  text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);
+  drawHUD();
   drawBossBar();
   drawHitFlash();
   if (EARTHON) {
@@ -1865,9 +1931,6 @@ window.draw = () => {
       let circulary = Math.sin(frameCount / 20) * Math.sin((spacing));
       EARTH[i - 1].x = PLAYER.x + 150 * circularx;
       EARTH[i - 1].y = PLAYER.y + 150 * circulary;
-    }
-    for (let i = EARTHCT; i > 0; i--) {
-      image(EARTHIMG2, 21 * windowWidth / 25, 19 * windowHeight / 20 - i  * windowHeight / 50, windowWidth / 50, windowWidth / 50);
     }
   }
   while (EXP.length > 200) {
@@ -1889,42 +1952,14 @@ window.draw = () => {
     if (AIR.y > PLAYER.y + windowHeight / 2 || AIR.y < PLAYER.y - windowHeight / 2) {
       ydirection *= -1;
     }
-    for (let i = AIRCT; i > 0; i--) {
-      image(AIRIMG2, 22 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
-    }
   }
   if (WATERON) {
     WATER.x = PLAYER.x;
     WATER.y = PLAYER.y;
-    for (let i = WATERCT; i > 0; i--) {
-      image(WATERIMG2, 23 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
-    }
-  }
-  camera.x = PLAYER.x;
-  camera.y = PLAYER.y;
-  if (SHAKE > 0) {
-    camera.x += (Math.random() - .5) * SHAKE;
-    camera.y += (Math.random() - .5) * SHAKE;
-    SHAKE -= 1;
   }
   updateSwing();
   if (FIREON) {
     updateFire();
-  }
-  for (let i = FIRECT; i > 0; i--) {
-    image(FIREIMG2, 24 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
-  }
-  for (let i = SUNCT; i > 0; i--) {
-    image(SUNIMG2, 20 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 50, windowWidth / 50);
-  }
-  for (let i = DEFENSECT; i > 0; i--) {
-    image(DEFENSEIMG2, 19 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50 - 2, windowWidth / 45, windowWidth / 45);
-  }
-  for (let i = HEALTHCT; i > 0; i--) {
-    image(HEALTHIMG2, 18 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 55, windowWidth / 55);
-  }
-  for (let i = SPEEDCT; i > 0; i--) {
-    image(SPEEDIMG2, 17 * windowWidth / 25, 19 * windowHeight / 20 - i * windowHeight / 50, windowWidth / 55, windowWidth / 55);
   }
   if (!WEAPONCHOSEN && !MENU && !MODALOPEN) {
     UPGRADESOUND.play();

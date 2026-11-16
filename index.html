@@ -9,6 +9,46 @@
         overflow: hidden;
         background: #0d0b10;
       }
+      canvas {
+        cursor: crosshair;
+      }
+      .hud-btn {
+        padding: 5px 14px;
+        border: 1px solid rgba(255, 255, 255, .25);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, .45);
+        color: #fff;
+        font: 600 12px Helvetica, Arial, sans-serif;
+        cursor: pointer;
+      }
+      .hud-btn:hover { background: rgba(0, 0, 0, .65); }
+      .hud-btn:disabled { opacity: .4; cursor: default; }
+      .cards-modal.death h2 { color: #ff6a6a; text-shadow: 0 0 20px rgba(255, 60, 60, .45); }
+      .death-card {
+        width: min(440px, 90vw);
+        padding: 26px 28px;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 18px;
+        background: #121016;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+        animation: cardIn .32s cubic-bezier(.2, .9, .3, 1.2) both;
+      }
+      .death-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+      .death-stats span { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+      .death-stats b { font-size: 22px; }
+      .death-best { margin: 14px 0 0; text-align: center; color: #FFD654; font-size: 14px; }
+      .death-card h3 { margin: 20px 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+      #lb-list { margin: 0; padding: 0; list-style: none; counter-reset: rank; }
+      #lb-list li { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(255, 255, 255, .07); font-size: 14px; }
+      #lb-list li:not(.lb-empty)::before { counter-increment: rank; content: counter(rank); width: 18px; opacity: .5; }
+      #lb-list li span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .lb-empty { opacity: .6; }
+      .death-submit { display: flex; gap: 8px; margin-top: 18px; }
+      .death-submit input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 10px; background: #1c1922; color: #fff; font: inherit; }
+      .death-submit button, .death-again { padding: 10px 16px; border: 0; border-radius: 10px; font: 700 14px Helvetica, Arial, sans-serif; cursor: pointer; }
+      .death-submit button { background: rgba(255, 255, 255, .12); color: #fff; }
+      .death-again { width: 100%; margin-top: 12px; padding: 13px; background: #FFD654; color: #1b1a17; font-size: 16px; }
+      .death-again:focus-visible, .death-submit button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
       .cards-modal {
         position: fixed;
         inset: 0;

@@ -28,7 +28,7 @@ const db = getFirestore(app);
 function submitScore() {
   try {
       const docRef = addDoc(collection(db, "players"), {
-        username: NAMEINPUT.value(),
+        username: (NAMEINPUT.value().trim() || "Anonymous").slice(0, 20),
         score: SCORE,
       });
   } catch (e) {
@@ -85,21 +85,31 @@ onSnapshot(
 
 document.onvisibilitychange = function() {
   if (document.visibilityState === "hidden") {
-    noLoop();
-    clearInterval(TIMERID);
-    PAUSED = true;
+    // Only auto-pause a game that is actually running. Leave menus, the
+    // death screen, and a game the player paused themselves alone.
+    WASRUNNING = !PAUSED && !MODALOPEN && PLAYERHEALTH > 0;
+    if (WASRUNNING) {
+      noLoop();
+      clearInterval(TIMERID);
+      PAUSED = true;
+    }
     BGMUSIC.setVolume(.01);
     BOSSMUSIC.setVolume(.01);
   } else {
-    startTime();
-    loop();
+    if (WASRUNNING) {
+      startTime();
+      loop();
+      PAUSED = false;
+      WASRUNNING = false;
+    }
     BGMUSIC.setVolume(.025);
     BOSSMUSIC.setVolume(.03);
-    PAUSED = false;
   }
 };
 
 let DEBUG = false;
+let MODALOPEN = false;
+let WASRUNNING = false;
 let NAMEINPUT;
 let LEADERS;
 let BOSSSTART;
@@ -216,7 +226,22 @@ let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massi
 
 p5.disableFriendlyErrors = true;
 
+let BGS = [];
+
 window.preload = () => {
+  for (let n = 1; n <= 4; n++) {
+    BGS.push(loadImage("images/tile" + n + ".jpeg"));
+  }
+  FIREIMG2 = loadImage("images/fire.png");
+  WATERIMG2 = loadImage("images/water1.png");
+  AIRIMG2 = loadImage("images/air.png");
+  EARTHIMG2 = loadImage("images/earth.png");
+  SUNIMG2 = loadImage("images/sun.png");
+  DEFENSEIMG2 = loadImage("images/defense.png");
+  SPEEDIMG2 = loadImage("images/speed.png");
+  HEALTHIMG2 = loadImage("images/healthup.png");
+  MOUSEIMG = loadImage("images/mouse.png");
+  WASDIMG = loadImage("images/wasd.png");
   PLAYERSTANDLEFTIMG = loadAnimation("images/left1.png");
   PLAYERSTANDRIGHTIMG = loadAnimation("images/right1.png");
   PLAYERRIGHTIMG = loadAnimation("images/right2.png", 3);
@@ -271,6 +296,10 @@ window.setup = () => {
 
 function initialize() {
   noSmooth();
+  if (PAUSE) {
+    PAUSE.remove();
+  }
+  MODALOPEN = false;
   PAUSE = createButton("Pause");
   PAUSE.removeAttribute("disabled");
   PAUSE.style("border-radius", windowWidth / 220 + "px");
@@ -279,6 +308,9 @@ function initialize() {
   PAUSE.size(windowWidth / 20, windowHeight / 30);
   PAUSE.position(windowWidth / 35, windowHeight / 15);
   PAUSE.mousePressed(() => {
+    if (MODALOPEN || PLAYERHEALTH <= 0) {
+      return;
+    }
     if (!PAUSED) {
       PAUSE.html("Play");
       noLoop();
@@ -296,8 +328,8 @@ function initialize() {
     }
   });
   PLAYER = new Sprite(windowWidth / 2, windowHeight / 2, 20, 40);
-  startTime();
   resetStats();
+  startTime();
   groupInit();
   physicsInit();
   visualInit();
@@ -319,18 +351,7 @@ function backgroundmusic() {
 }
 
 function visualInit() {
-  let imagenumber = Math.ceil(Math.random() * 4);
-  BG = loadImage("images/tile" + imagenumber + ".jpeg");
-  FIREIMG2 = loadImage("images/fire.png");
-  WATERIMG2 = loadImage("images/water1.png");
-  AIRIMG2 = loadImage("images/air.png");
-  EARTHIMG2 = loadImage("images/earth.png");
-  SUNIMG2 = loadImage("images/sun.png");
-  DEFENSEIMG2 = loadImage("images/defense.png");
-  SPEEDIMG2 = loadImage("images/speed.png");
-  HEALTHIMG2 = loadImage("images/healthup.png");
-  MOUSEIMG = loadImage("images/mouse.png");
-  WASDIMG = loadImage("images/wasd.png");
+  BG = BGS[Math.floor(Math.random() * BGS.length)];
   ENEMIES.addAnimation("ENEMYLEFTIMG", ENEMYLEFTIMG);
   ENEMIES.addAnimation("ENEMYRIGHTIMG", ENEMYRIGHTIMG);
   SHOOTENEMIES.addAnimation("SHOOTENEMYLEFTIMG", SHOOTENEMYLEFTIMG);
@@ -421,6 +442,7 @@ function resetStats() {
 }
 
 function chooseWeapon() {
+  MODALOPEN = true;
   noLoop();
   PAUSE.attribute("disabled", "");
   clearInterval(TIMERID);
@@ -447,6 +469,7 @@ function chooseWeapon() {
     button.attribute = options[i];
     button.mousePressed(() => {
       WEAPONCHOSEN = true;
+      MODALOPEN = false;
       if (button.attribute === "Select Sun Orb") {
         CHOSEORBS = true;
       } else if (button.attribute === "Select Sun Sword") {
@@ -581,6 +604,11 @@ function overlapCheck() {
 }
 
 function startTime() {
+  // Clear first so repeated calls never stack timers and speed up the clock.
+  clearInterval(TIMERID);
+  if (BOSSSTART) {
+    return;
+  }
   TIMERID = setInterval(function() {
     TIME += 1;
   }, 1000);
@@ -678,8 +706,8 @@ function enemyDeadUpdate(enemy) {
         new EXP.Sprite(PLAYER.x, PLAYER.y);
       }
       TIME += 1;
-      startTime();
       BOSSSTART = false;
+      startTime();
       BOSSMUSIC.stop();
       BGMUSIC.play();
     } else {
@@ -711,6 +739,7 @@ function checkLevel() {
 }
 
 function generateUpgrades() {
+  MODALOPEN = true;
   noLoop();
   PAUSE.attribute("disabled", "");
   clearInterval(TIMERID);
@@ -821,6 +850,7 @@ function generateUpgrades() {
       WATERLVLUPSOUND.play();
       WATERLVLUPSOUND.setVolume(.2);
     }
+    MODALOPEN = false;
     startTime();
     loop();
     PAUSE.removeAttribute("disabled");
@@ -918,6 +948,7 @@ window.mousePressed = () => {
 
 window.draw = () => {
   if (PLAYERHEALTH <= 0) {
+    MODALOPEN = true;
     noLoop();
     PAUSE.attribute("disabled", "");
     clearInterval(TIMERID);
@@ -945,6 +976,8 @@ window.draw = () => {
     LEADERS.style("text-align","center");
     LEADERS.position(windowWidth / 3 + windowWidth / 26 - 2 * windowWidth / 70, windowHeight / 5 + 60);
     NAMEINPUT = createInput("");
+    NAMEINPUT.attribute("maxlength", "20");
+    NAMEINPUT.attribute("placeholder", "Your name");
     NAMEINPUT.position(windowWidth / 3 + 2 * windowWidth / 26, 4 * windowHeight / 5 - 80);
     NAMEINPUT.style("border-radius", windowWidth / 280 + "px");
     NAMEINPUT.style("background-color", "white");

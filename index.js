@@ -108,6 +108,23 @@ document.onvisibilitychange = function() {
 };
 
 let DEBUG = false;
+let BOSSMAXLIFE = 1;
+let PREVHEALTH = 100;
+let HITFLASH = 0;
+let MAGNETRADIUS = 140;
+let MENU;
+let VIGNETTE;
+let PARTICLES = [];
+let POPUPS = [];
+let MOTES = [];
+let LEVELBANNER = 0;
+let SHAKE = 0;
+let SWING = null;
+let SWORDTRAIL = [];
+const SWORDLEN = 120;
+const SWORDSWEEP = 130;
+const SWORDFRAMES = 11;
+const MAXPARTICLES = 350;
 let MODALOPEN = false;
 let WASRUNNING = false;
 let NAMEINPUT;
@@ -128,10 +145,6 @@ let SPEEDIMG2;
 let HEALTHIMG2;
 let MOUSEIMG;
 let WASDIMG;
-let x1;
-let y1;
-let x2;
-let y2;
 let PLAYER;
 let PLAYERHEALTH;
 let SCORE;
@@ -226,12 +239,9 @@ let UPGRADEDESC = {0:["Add a Fireball", "Fire burn through enemies dealing massi
 
 p5.disableFriendlyErrors = true;
 
-let BGS = [];
-
 window.preload = () => {
-  for (let n = 1; n <= 4; n++) {
-    BGS.push(loadImage("images/tile" + n + ".jpeg"));
-  }
+  // One seamless forest map (mirrored so the edges line up when it tiles).
+  BG = loadImage("images/map1.jpg");
   FIREIMG2 = loadImage("images/fire.png");
   WATERIMG2 = loadImage("images/water1.png");
   AIRIMG2 = loadImage("images/air.png");
@@ -291,10 +301,10 @@ window.preload = () => {
 };
 
 window.setup = () => {
-  initialize();
+  initialize(true);
 };
 
-function initialize() {
+function initialize(withMenu) {
   noSmooth();
   if (PAUSE) {
     PAUSE.remove();
@@ -307,26 +317,7 @@ function initialize() {
   PAUSE.style("border", "none");
   PAUSE.size(windowWidth / 20, windowHeight / 30);
   PAUSE.position(windowWidth / 35, windowHeight / 15);
-  PAUSE.mousePressed(() => {
-    if (MODALOPEN || PLAYERHEALTH <= 0) {
-      return;
-    }
-    if (!PAUSED) {
-      PAUSE.html("Play");
-      noLoop();
-      clearInterval(TIMERID);
-      PAUSED = true;
-      BGMUSIC.setVolume(.01);
-      BOSSMUSIC.setVolume(.01);
-    } else {
-      PAUSE.html("Pause");
-      startTime();
-      loop();
-      BGMUSIC.setVolume(.025);
-      BOSSMUSIC.setVolume(.03);
-      PAUSED = false;
-    }
-  });
+  PAUSE.mousePressed(togglePause);
   PLAYER = new Sprite(windowWidth / 2, windowHeight / 2, 20, 40);
   resetStats();
   startTime();
@@ -340,7 +331,337 @@ function initialize() {
     EXP.y = () => Math.random() * windowHeight;
 	}
   overlapCheck();
+  PREVHEALTH = PLAYERHEALTH;
+  HITFLASH = 0;
+  PARTICLES = [];
+  POPUPS = [];
+  LEVELBANNER = 0;
+  SHAKE = 0;
+  SWING = null;
+  SWORDTRAIL = [];
+  LASTPX = PLAYER.x;
+  LASTPY = PLAYER.y;
+  buildVignette();
+  initMotes();
+  if (withMenu) {
+    showMenu();
+  } else {
+    backgroundmusic();
+  }
+}
+
+function burst(x, y, count, rgb, speed) {
+  for (let i = 0; i < count && PARTICLES.length < MAXPARTICLES; i++) {
+    let a = Math.random() * Math.PI * 2;
+    let v = speed * (.4 + Math.random());
+    PARTICLES.push({x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 30 + Math.random() * 20, max: 50, r: rgb[0], g: rgb[1], b: rgb[2], size: 3 + Math.random() * 4});
+  }
+}
+
+function popup(x, y, txt) {
+  if (POPUPS.length < 40) {
+    POPUPS.push({x: x, y: y, txt: txt, life: 45});
+  }
+}
+
+function toScreen(wx, wy) {
+  return [wx - camera.x + windowWidth / 2, wy - camera.y + windowHeight / 2];
+}
+
+function drawEffects() {
+  push();
+  noStroke();
+  for (let i = PARTICLES.length - 1; i >= 0; i--) {
+    let p = PARTICLES[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= .92;
+    p.vy *= .92;
+    p.life -= 1;
+    if (p.life <= 0) {
+      PARTICLES.splice(i, 1);
+      continue;
+    }
+    let [sx, sy] = toScreen(p.x, p.y);
+    fill(p.r, p.g, p.b, 255 * p.life / p.max);
+    circle(sx, sy, p.size * p.life / p.max + 1);
+  }
+  textAlign(CENTER);
+  textSize(windowWidth / 90);
+  stroke(30, 20, 10);
+  strokeWeight(3);
+  for (let i = POPUPS.length - 1; i >= 0; i--) {
+    let p = POPUPS[i];
+    p.y -= .8;
+    p.life -= 1;
+    if (p.life <= 0) {
+      POPUPS.splice(i, 1);
+      continue;
+    }
+    let [sx, sy] = toScreen(p.x, p.y);
+    fill(255, 214, 84, 255 * Math.min(1, p.life / 20));
+    text(p.txt, sx, sy);
+  }
+  pop();
+}
+
+function buildVignette() {
+  VIGNETTE = createGraphics(windowWidth, windowHeight);
+  let ctx = VIGNETTE.drawingContext;
+  let g = ctx.createRadialGradient(windowWidth / 2, windowHeight / 2, Math.min(windowWidth, windowHeight) * .25,
+    windowWidth / 2, windowHeight / 2, Math.max(windowWidth, windowHeight) * .75);
+  g.addColorStop(0, "rgba(0,0,0,0)");
+  g.addColorStop(1, "rgba(10,5,0,0.62)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, windowWidth, windowHeight);
+}
+
+function initMotes() {
+  MOTES = [];
+  for (let i = 0; i < 40; i++) {
+    MOTES.push({x: Math.random() * windowWidth, y: Math.random() * windowHeight, z: .2 + Math.random() * .6, s: 1.5 + Math.random() * 3, ph: Math.random() * 6.28});
+  }
+}
+
+let LASTPX = 0;
+let LASTPY = 0;
+
+function drawBackground() {
+  // Tile the map at its real size so it stays sharp and scrolls with the player.
+  let tw = BG.width;
+  let th = BG.height;
+  let ox = -(((camera.x - windowWidth / 2) % tw) + tw) % tw;
+  let oy = -(((camera.y - windowHeight / 2) % th) + th) % th;
+  for (let x = ox; x < windowWidth; x += tw) {
+    for (let y = oy; y < windowHeight; y += th) {
+      image(BG, x, y, tw + 1, th + 1);
+    }
+  }
+  push();
+  noStroke();
+  fill(15, 10, 35, 70);
+  rect(0, 0, windowWidth, windowHeight);
+  let dx = PLAYER.x - LASTPX;
+  let dy = PLAYER.y - LASTPY;
+  LASTPX = PLAYER.x;
+  LASTPY = PLAYER.y;
+  for (let m of MOTES) {
+    m.x = (m.x - dx * m.z + Math.sin(frameCount / 60 + m.ph) * .3 + windowWidth) % windowWidth;
+    m.y = (m.y - dy * m.z - .25 * m.z + windowHeight) % windowHeight;
+    fill(255, 220, 120, 60 + 70 * Math.sin(frameCount / 30 + m.ph) ** 2);
+    circle(m.x, m.y, m.s);
+  }
+  pop();
+}
+
+function drawOverlays() {
+  image(VIGNETTE, 0, 0);
+  if (PLAYERHEALTH > 0 && PLAYERHEALTH < PLAYERMAXHEALTH * .25) {
+    push();
+    noFill();
+    let pulse = 60 + 50 * Math.sin(frameCount / 8);
+    stroke(200, 0, 0, pulse);
+    strokeWeight(windowWidth / 30);
+    rect(0, 0, windowWidth, windowHeight);
+    pop();
+  }
+  if (LEVELBANNER > 0 && !MODALOPEN) {
+    push();
+    textAlign(CENTER, CENTER);
+    let a = 255 * Math.min(1, LEVELBANNER / 25);
+    let grow = 1 + (100 - LEVELBANNER) / 600;
+    textSize(windowWidth / 22 * grow);
+    stroke(60, 30, 0, a);
+    strokeWeight(5);
+    fill(255, 214, 84, a);
+    text("Level " + Math.floor(LVL), windowWidth / 2, windowHeight / 3);
+    pop();
+    LEVELBANNER -= 1;
+  }
+}
+
+function handleMovement() {
+  let dx = (kb.pressing("right") ? 1 : 0) - (kb.pressing("left") ? 1 : 0);
+  let dy = (kb.pressing("down") ? 1 : 0) - (kb.pressing("up") ? 1 : 0);
+  if (dx === 0 && dy === 0) {
+    PLAYER.ani = FACING === "right" ? "PLAYERSTANDRIGHTIMG" : "PLAYERSTANDLEFTIMG";
+    return;
+  }
+  if (dx !== 0) {
+    FACING = dx > 0 ? "right" : "left";
+  }
+  PLAYER.ani = FACING === "right" ? "right" : "left";
+  let diagonal = dx !== 0 && dy !== 0;
+  let speed = diagonal ? PLAYERSPEED - 1 : PLAYERSPEED;
+  PLAYER.move(PLAYERSPEED * 1.5, Math.atan2(dy, dx) * 180 / Math.PI, speed);
+}
+
+function drawPauseOverlay() {
+  if (!PAUSED) {
+    return;
+  }
+  push();
+  resetMatrix();
+  noStroke();
+  fill(0, 0, 0, 150);
+  rect(0, 0, windowWidth, windowHeight);
+  textAlign(CENTER, CENTER);
+  fill(255, 214, 84);
+  stroke(60, 30, 0);
+  strokeWeight(5);
+  textSize(windowWidth / 22);
+  text("Paused", windowWidth / 2, windowHeight / 2 - windowHeight / 30);
+  noStroke();
+  fill(255);
+  textSize(windowWidth / 80);
+  text("Press P or Esc to keep playing", windowWidth / 2, windowHeight / 2 + windowHeight / 25);
+  pop();
+}
+
+function togglePause() {
+  if (MODALOPEN || PLAYERHEALTH <= 0) {
+    return;
+  }
+  if (!PAUSED) {
+    PAUSE.html("Play");
+    noLoop();
+    clearInterval(TIMERID);
+    PAUSED = true;
+    BGMUSIC.setVolume(.01);
+    BOSSMUSIC.setVolume(.01);
+    // Wait for the in-flight frame to finish, otherwise it paints over the overlay.
+    requestAnimationFrame(() => requestAnimationFrame(drawPauseOverlay));
+  } else {
+    PAUSE.html("Pause");
+    startTime();
+    loop();
+    BGMUSIC.setVolume(.025);
+    BOSSMUSIC.setVolume(.03);
+    PAUSED = false;
+  }
+}
+
+window.keyPressed = () => {
+  if (key === "p" || key === "P" || keyCode === ESCAPE) {
+    togglePause();
+  }
+};
+
+window.windowResized = () => {
+  resizeCanvas(windowWidth, windowHeight);
+  buildVignette();
+  initMotes();
+};
+
+function drawBossBar() {
+  if (!BOSSSTART || BOSSENEMIES.length < 1) {
+    return;
+  }
+  let w = windowWidth * 2 / 5;
+  let x = windowWidth * 3 / 10;
+  let y = windowHeight / 6.2;
+  let pct = constrain(BOSSENEMIES[0].life / BOSSMAXLIFE, 0, 1);
+  push();
+  noStroke();
+  fill(0, 0, 0, 150);
+  rect(x, y, w, windowHeight / 40);
+  fill(150, 60, 220);
+  rect(x, y, w * pct, windowHeight / 40);
+  fill("white");
+  stroke(45, 45, 45);
+  strokeWeight(2.5);
+  textAlign(CENTER);
+  textSize(windowWidth / 85);
+  text("Shadow Lord", windowWidth / 2, y - windowHeight / 120);
+  pop();
+}
+
+function drawHitFlash() {
+  if (HITFLASH <= 0) {
+    return;
+  }
+  let a = map(HITFLASH, 0, 14, 0, 110);
+  let edge = windowWidth / 28;
+  push();
+  noStroke();
+  fill(220, 0, 0, a);
+  rect(0, 0, windowWidth, edge);
+  rect(0, windowHeight - edge, windowWidth, edge);
+  rect(0, 0, edge, windowHeight);
+  rect(windowWidth - edge, 0, edge, windowHeight);
+  pop();
+  HITFLASH -= 1;
+}
+
+function bestScore() {
+  try {
+    return parseInt(localStorage.getItem("celestialBest") || "0", 10);
+  } catch (e) {
+    return 0;
+  }
+}
+
+function saveBest(score) {
+  try {
+    if (score > bestScore()) {
+      localStorage.setItem("celestialBest", String(score));
+      return true;
+    }
+  } catch (e) {
+    // Storage can be unavailable in private browsing. The game still works without it.
+  }
+  return false;
+}
+
+function showMenu() {
+  MODALOPEN = true;
+  noLoop();
+  clearInterval(TIMERID);
+  PAUSE.attribute("disabled", "");
+  MENU = createDiv("");
+  MENU.style("position", "fixed");
+  MENU.style("inset", "0");
+  MENU.style("display", "flex");
+  MENU.style("flex-direction", "column");
+  MENU.style("align-items", "center");
+  MENU.style("justify-content", "center");
+  MENU.style("gap", windowHeight / 40 + "px");
+  MENU.style("background", "radial-gradient(rgba(40, 20, 0, .55), rgba(0, 0, 0, .85))");
+  MENU.style("color", "white");
+  MENU.style("font-family", "Helvetica, Arial, sans-serif");
+  MENU.style("text-align", "center");
+  MENU.style("z-index", "10");
+  let best = bestScore();
+  MENU.html(
+    '<div style="font-size:' + windowWidth / 18 + 'px;font-weight:700;letter-spacing:2px;color:#FFD654;text-shadow:0 0 24px rgba(255,180,0,.6)">CELESTIAL NINJA</div>' +
+    '<div style="font-size:' + windowWidth / 70 + 'px;max-width:46ch;opacity:.9">Bend the elements and defend the Sun from shadow warriors that grow stronger every minute.</div>' +
+    '<div style="font-size:' + windowWidth / 90 + 'px;opacity:.75;line-height:1.8">WASD to move &nbsp;·&nbsp; Click or hold to attack &nbsp;·&nbsp; P or Esc to pause</div>' +
+    (best > 0 ? '<div style="font-size:' + windowWidth / 80 + 'px;color:#FFD654">Your best: ' + best.toLocaleString("en-US") + '</div>' : "")
+  );
+  let play = createButton("Play");
+  play.parent(MENU);
+  play.style("font-size", windowWidth / 55 + "px");
+  play.style("padding", windowHeight / 70 + "px " + windowWidth / 30 + "px");
+  play.style("margin-top", windowHeight / 50 + "px");
+  play.style("border", "none");
+  play.style("border-radius", windowWidth / 200 + "px");
+  play.style("background", "#FFD654");
+  play.style("color", "#1b1a17");
+  play.style("font-weight", "700");
+  play.style("cursor", "pointer");
+  play.mousePressed(startGame);
+}
+
+function startGame() {
+  if (MENU) {
+    MENU.remove();
+    MENU = null;
+  }
+  MODALOPEN = false;
+  PAUSE.removeAttribute("disabled");
   backgroundmusic();
+  startTime();
+  loop();
 }
 
 function backgroundmusic() {
@@ -351,7 +672,6 @@ function backgroundmusic() {
 }
 
 function visualInit() {
-  BG = BGS[Math.floor(Math.random() * BGS.length)];
   ENEMIES.addAnimation("ENEMYLEFTIMG", ENEMYLEFTIMG);
   ENEMIES.addAnimation("ENEMYRIGHTIMG", ENEMYRIGHTIMG);
   SHOOTENEMIES.addAnimation("SHOOTENEMYLEFTIMG", SHOOTENEMYLEFTIMG);
@@ -396,10 +716,6 @@ function resetStats() {
   CHOSESWORD = false;
   FACING = "right";
   PAUSED = false;
-  x1 = 0;
-  y1 = 0;
-  x2 = windowWidth;
-  y2 = windowHeight;
   PLAYERHEALTH = 100;
   PLAYERMAXHEALTH = 100;
   SCORE = 0;
@@ -617,6 +933,7 @@ function startTime() {
 function expCollect(PLAYER, EXP) {
   // EXPERIENCESOUND.play();
   // EXPERIENCESOUND.setVolume(.05);
+  burst(EXP.x, EXP.y, 3, [255, 214, 84], 2.5);
   EXP.remove();
   EXPPOINTS += 1;
   checkLevel();
@@ -654,6 +971,7 @@ function damagePlayerOrb(shadoworb) {
 }
 
 function damagePlayerCharge(charge) {
+  SHAKE = 18;
   PLAYERHEALTH -= RESISTANCE * Math.pow(TIME / 200, TIME / 450);
   fill(255, 0, 0, 100);
   rect(0, 0, windowWidth, windowHeight);
@@ -666,6 +984,7 @@ function orbToEnemy(weapon, enemy) {
 }
 
 function swordToEnemy(weapon, enemy) {
+  burst(enemy.x, enemy.y, 5, [255, 230, 120], 3);
   enemy.life -= SWORDDAMAGE;
   enemyDeadUpdate(enemy);
 }
@@ -701,7 +1020,7 @@ function bombToEnemy(weapon, enemy) {
 
 function enemyDeadUpdate(enemy) {
   if (enemy.life <= 0) {
-    if (BOSSENEMIES.includes(enemy)) {
+    if (enemy.kind === "boss") {
       for (let i = 0; i < 50; i++) {
         new EXP.Sprite(PLAYER.x, PLAYER.y);
       }
@@ -719,16 +1038,26 @@ function enemyDeadUpdate(enemy) {
     if (Math.random() * 1000 > 998.25) {
       new HEALTHS.Sprite(enemy.x + 10, enemy.y - 10);
     }
+    let gained = Math.ceil(500 * TIME / windowWidth);
+    burst(enemy.x, enemy.y, enemy.kind === "boss" ? 60 : 10, [40, 20, 60], enemy.kind === "boss" ? 9 : 4);
+    popup(enemy.x, enemy.y - 20, "+" + gained);
+    if (enemy.kind === "boss") {
+      SHAKE = 30;
+    }
     enemy.remove();
-    SCORE += Math.ceil(500 * TIME / windowWidth);
+    SCORE += gained;
   }
 }
 
 function checkLevel() {
+  let before = Math.floor(LVL);
   if (EXPPOINTS < 268) {
     LVL = EXPPOINTS / 10;
   } else {
     LVL = Math.pow(EXPPOINTS, 1 / 1.7);
+  }
+  if (Math.floor(LVL) > before) {
+    LEVELBANNER = 100;
   }
   if (EXPPOINTS % 30 === 0 && EXPPOINTS < 240 || EXPPOINTS === 250 || EXPPOINTS === 324 || EXPPOINTS === 421 || EXPPOINTS === 529 || EXPPOINTS === 646 || EXPPOINTS === 773 || EXPPOINTS === 909 || EXPPOINTS === 1054 || EXPPOINTS === 1207 || EXPPOINTS === 1370 || EXPPOINTS === 1540 || EXPPOINTS === 1719 || EXPPOINTS === 1905 || EXPPOINTS === 2100 || EXPPOINTS === 2303 || EXPPOINTS === 2512 || EXPPOINTS === 2729 || EXPPOINTS === 2953 || EXPPOINTS === 3185 || EXPPOINTS === 3424 || EXPPOINTS === 3670 || EXPPOINTS === 3923 || EXPPOINTS === 4183 || EXPPOINTS === 4450 || EXPPOINTS === 4724 || EXPPOINTS === 5004) {
     redraw();
@@ -869,34 +1198,33 @@ function spawnEnemy() {
     let randomnum = Math.random() * 2;
     if (randomnum > (1.88 + 15 / TIME)) {
       enemy = new SHOOTENEMIES.Sprite();
+      enemy.kind = "shoot";
       enemy.life = 100 + Math.pow(TIME, 1.25);
     } else if (randomnum > (1.74 + 15 / TIME)) {
       enemy = new FASTENEMIES.Sprite();
+      enemy.kind = "fast";
       enemy.life = 100 + TIME;
     } else {
       enemy = new ENEMIES.Sprite();
+      enemy.kind = "basic";
       enemy.life = 100 + Math.pow(TIME, 1.35);
     }
   } else {
     enemy = new ENEMIES.Sprite();
+    enemy.kind = "basic";
     enemy.life = 100 + Math.pow(TIME, 1.35);
   }
-  if (Math.random() * 2 > 1) {
-    if (Math.random() * 2 > 1) {
-      enemy.x = Math.random() * (PLAYER.x + windowWidth / 2);
-      enemy.y = PLAYER.y - windowHeight / 2;
-    } else {
-      enemy.x = Math.random() * (PLAYER.x + windowWidth / 2);
-      enemy.y = PLAYER.y + windowHeight / 2;
-    }
+  // Spawn on a random edge of the visible screen around the player. The old
+  // math spread spawns from 0 to the player's position, so far from the start
+  // most enemies appeared off-screen and were culled and respawned every frame.
+  let edgeX = PLAYER.x - windowWidth / 2 + Math.random() * windowWidth;
+  let edgeY = PLAYER.y - windowHeight / 2 + Math.random() * windowHeight;
+  if (Math.random() < .5) {
+    enemy.x = edgeX;
+    enemy.y = PLAYER.y + (Math.random() < .5 ? -1 : 1) * windowHeight / 2;
   } else {
-    if (Math.random() * 2 > 1) {
-      enemy.x = PLAYER.x - windowWidth / 2;
-      enemy.y = Math.random() * (PLAYER.y + windowHeight / 2);
-    } else {
-      enemy.x = PLAYER.x + windowWidth / 2;
-      enemy.y = Math.random() * (PLAYER.y + windowHeight / 2);
-    }
+    enemy.x = PLAYER.x + (Math.random() < .5 ? -1 : 1) * windowWidth / 2;
+    enemy.y = edgeY;
   }
 }
 
@@ -907,30 +1235,77 @@ function attackMouse() {
     let orb = new ORBS.Sprite(PLAYER.x, PLAYER.y, 15, 15);
     orb.moveTowards(mouse.x + PLAYER.mouse.x, mouse.y + PLAYER.mouse.y);
     orb.speed = 20;
-  } else if (CHOSESWORD && SWORDS.length < 1) {
-    // SUNATKSOUND.play();
-    // SUNATKSOUND.setVolume(.2);
-    let sword = new SWORDS.Sprite([[PLAYER.x, PLAYER.y], [mouse.x + PLAYER.mouse.x, mouse.y + PLAYER.mouse.y]]);
-    if (PLAYER.x > mouse.x + PLAYER.mouse.x) {
-      if (PLAYER.y > mouse.y + PLAYER.mouse.y) {
-        sword.ani = "SWORDIMG_L";
-      } else {
-        sword.ani = "SWORDIMG_D";
-      }
-    } else {
-      if (PLAYER.y > mouse.y + PLAYER.mouse.y) {
-        sword.ani = "SWORDIMG_U";
-      } else {
-        sword.ani = "SWORDIMG_R";
-      }
-    }
-    sword.width = 80;
-    sword.height = 80;
-    sword.rotate(90, 5.2).then(() => {
-      SWORDS.remove();
-    });
+  } else if (CHOSESWORD && SWORDS.length < 1 && !SWING) {
+    // Fixed-length blade that sweeps an arc toward the cursor and stays attached
+    // to the player. The old sword was a line to the cursor, so its size changed
+    // with click distance and it was left behind when the player moved.
+    let aim = Math.atan2(mouse.y + PLAYER.mouse.y - PLAYER.y, mouse.x + PLAYER.mouse.x - PLAYER.x) * 180 / Math.PI;
+    let sword = new SWORDS.Sprite(PLAYER.x, PLAYER.y, SWORDLEN, 16);
+    sword.collider = "kinematic";
+    sword.draw = drawBlade;
+    SWING = {start: aim - SWORDSWEEP / 2, frame: 0};
+    SWORDTRAIL = [];
+    updateSwing();
   }
 }
+
+function drawBlade() {
+  push();
+  noStroke();
+  fill(255, 200, 60, 70);
+  rect(0, 0, SWORDLEN + 10, 22, 11);
+  fill(255, 224, 120);
+  rect(4, 0, SWORDLEN - 8, 8, 4);
+  fill(255, 255, 235);
+  rect(6, 0, SWORDLEN - 20, 3, 2);
+  fill(120, 80, 40);
+  rect(-SWORDLEN / 2 + 8, 0, 16, 10, 3);
+  pop();
+}
+
+function updateSwing() {
+  if (!SWING) {
+    return;
+  }
+  let t = Math.min(1, SWING.frame / SWORDFRAMES);
+  let eased = 1 - Math.pow(1 - t, 3);
+  let angle = SWING.start + SWORDSWEEP * eased;
+  if (SWORDS.length > 0) {
+    let rad = angle * Math.PI / 180;
+    SWORDS[0].rotation = angle;
+    SWORDS[0].x = PLAYER.x + Math.cos(rad) * SWORDLEN / 2;
+    SWORDS[0].y = PLAYER.y + Math.sin(rad) * SWORDLEN / 2;
+  }
+  SWORDTRAIL.push(angle);
+  if (SWORDTRAIL.length > 7) {
+    SWORDTRAIL.shift();
+  }
+  SWING.frame += 1;
+  if (SWING.frame > SWORDFRAMES) {
+    SWORDS.remove();
+    SWING = null;
+  }
+}
+
+function drawSwordTrail() {
+  if (SWORDTRAIL.length < 2) {
+    return;
+  }
+  push();
+  translate(windowWidth / 2 + (PLAYER.x - camera.x), windowHeight / 2 + (PLAYER.y - camera.y));
+  noStroke();
+  for (let i = 1; i < SWORDTRAIL.length; i++) {
+    let a0 = SWORDTRAIL[i - 1] * Math.PI / 180;
+    let a1 = SWORDTRAIL[i] * Math.PI / 180;
+    fill(255, 210, 90, 25 + i * 18);
+    arc(0, 0, SWORDLEN * 2.1, SWORDLEN * 2.1, Math.min(a0, a1), Math.max(a0, a1) + .02, PIE);
+  }
+  pop();
+  if (!SWING) {
+    SWORDTRAIL.shift();
+  }
+}
+
 window.mousePressed = () => {
   // if (!mouseIsPressed) {
   attackMouse();
@@ -963,7 +1338,9 @@ window.draw = () => {
     buttonback.style("border", "none");
     buttonback.size(windowWidth / 2, 2 * windowHeight / 3);
     buttonback.position(windowWidth / 6 + 2 / 24 * windowWidth, windowHeight / 5);
-    let div = createDiv("Your Score: " + SCORE);
+    let newBest = saveBest(SCORE);
+    let div = createDiv("Your Score: " + SCORE.toLocaleString("en-US") +
+      (newBest ? "<br><span style='color:#FFD654'>New personal best!</span>" : "<br><span style='font-size:.7em'>Best: " + bestScore().toLocaleString("en-US") + "</span>"));
     div.style("color", "black");
     div.style("font-size", windowWidth / 60 + "px");
     div.size(windowWidth / 6, windowHeight / 15);
@@ -1010,7 +1387,7 @@ window.draw = () => {
       allSprites.remove();
       clear();
       LOSESOUND.stop();
-      initialize();
+      initialize(false);
       TIME = 30;
       loop();
       buttonback.remove();
@@ -1033,40 +1410,24 @@ window.draw = () => {
       }
     }
   }
+  if (PLAYERHEALTH < PREVHEALTH - .05) {
+    HITFLASH = 14;
+  }
+  PREVHEALTH = PLAYERHEALTH;
   if (mouseIsPressed && frameCount % 18 === 0) {
     // if (!mousePressed()) {
     attackMouse();
     // }
   }
   clear();
-  image(BG, x1, y1, windowWidth + 8, windowHeight + 8);
-  image(BG, x2, y2, windowWidth + 8, windowHeight + 8);
-  image(BG, x1, y2, windowWidth + 8, windowHeight + 8);
-  image(BG, x2, y1, windowWidth + 8, windowHeight + 8);
+  drawBackground();
+  drawSwordTrail();
+  drawEffects();
+  drawOverlays();
   image(MOUSEIMG, windowWidth / 60, 18.2 * windowHeight / 20, windowWidth / 40, windowHeight / 20);
   image(WASDIMG, windowWidth / 60, 16.5 * windowHeight / 20, windowWidth / 35, windowHeight / 15);
   fill(50, 40, 50, TIME / 3 - PLAYERHEALTH * 2);
   rect(0, 0, windowWidth, windowHeight);
-  if (x1 < -windowWidth){
-    x1 = windowWidth;
-  } else if (x1 > windowWidth) {
-    x1 = -windowWidth;
-  }
-  if (x2 < -windowWidth){
-    x2 = windowWidth;
-  } else if (x2 > windowWidth) {
-    x2 = -windowWidth;
-  }
-  if (y1 < -windowHeight){
-    y1 = windowHeight;
-  } else if (y1 > windowHeight) {
-    y1 = -windowHeight;
-  }
-  if (y2 < -windowHeight){
-    y2 = windowHeight;
-  } else if (y2 > windowHeight) {
-    y2 = -windowHeight;
-  }
   if (frameCount % 230 === 0 && TIME > 20 && !BOSSSTART) {
     for (let i = 0; i < TIME * Math.pow(windowWidth, 2) / 20000000; i++) {
       if (ENEMIES.length < Math.pow(windowWidth, 2) / 20000) {
@@ -1076,7 +1437,7 @@ window.draw = () => {
   }
   for (let i = 0; i < ENEMIES.length; i++) {
     if (!BOSSSTART && ENEMIES[i].x > PLAYER.x + 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y > PLAYER.y + 2 * windowHeight / 3 || !BOSSSTART && ENEMIES[i].x < PLAYER.x - 2 * windowWidth / 3 || !BOSSSTART && ENEMIES[i].y < PLAYER.y - 2 * windowHeight / 3) {
-      if (!BOSSENEMIES.includes(ENEMIES[i])) {
+      if (ENEMIES[i].kind !== "boss") {
         ENEMIES[i].remove();
         spawnEnemy();
       }
@@ -1084,14 +1445,14 @@ window.draw = () => {
     let enemydirection = Math.atan2(PLAYER.y - ENEMIES[i].y, PLAYER.x - ENEMIES[i].x) * 180 / Math.PI;
     ENEMIES[i].direction = enemydirection;
     ENEMIES[i].life += 1;
-    if (FASTENEMIES.includes(ENEMIES[i])) {
+    if (ENEMIES[i].kind === "fast") {
       ENEMIES[i].speed = 2 + TIME / 100;
       if (ENEMIES[i].x < PLAYER.x) {
         ENEMIES[i].ani = "FASTENEMYRIGHTIMG";
       } else {
         ENEMIES[i].ani = "FASTENEMYLEFTIMG";
       }
-    } else if (SHOOTENEMIES.includes(ENEMIES[i])) {
+    } else if (ENEMIES[i].kind === "shoot") {
       if (frameCount % 360 === 0) {
         let shadoworb = new SHADOWORBS.Sprite(ENEMIES[i].x, ENEMIES[i].y, 15, 15);
         shadoworb.moveTowards(PLAYER.x, PLAYER.y);
@@ -1118,65 +1479,7 @@ window.draw = () => {
       ENEMIES[i].speed = .5 * (2 + TIME / 250);
     }
   }
-  if (kb.pressing("down") && kb.pressing("left")) {
-    PLAYER.ani = "left";
-    FACING = "left";
-    PLAYER.move(PLAYERSPEED * 1.5, 135, PLAYERSPEED - 1);
-    y1 -= PLAYERSPEED - 1;
-    y2 -= PLAYERSPEED - 1;
-    x1 += PLAYERSPEED - 1;
-    x2 += PLAYERSPEED - 1;
-	} else if (kb.pressing("down") && kb.pressing("right")) {
-    PLAYER.ani = "right";
-    FACING = "right";
-    PLAYER.move(PLAYERSPEED * 1.5, 45, PLAYERSPEED - 1);
-    y1 -= PLAYERSPEED - 1;
-    y2 -= PLAYERSPEED - 1;
-    x1 -= PLAYERSPEED - 1;
-    x2 -= PLAYERSPEED - 1;
-	} else if (kb.pressing("up") && kb.pressing("left")) {
-    PLAYER.ani = "left";
-    FACING = "left";
-    PLAYER.move(PLAYERSPEED * 1.5, 225, PLAYERSPEED - 1);
-    y1 += PLAYERSPEED - 1;
-    y2 += PLAYERSPEED - 1;
-    x1 += PLAYERSPEED - 1;
-    x2 += PLAYERSPEED - 1;
-	} else if (kb.pressing("up") && kb.pressing("right")) {
-    PLAYER.ani = "right";
-    FACING = "right";
-    x1 -= PLAYERSPEED - 1;
-    x2 -= PLAYERSPEED - 1;
-    y1 += PLAYERSPEED - 1;
-    y2 += PLAYERSPEED - 1;
-    PLAYER.move(PLAYERSPEED * 1.5, 315, PLAYERSPEED - 1);
-	} else if (kb.pressing("right")) {
-    PLAYER.ani = "right";
-    FACING = "right";
-    x1 -= PLAYERSPEED;
-    x2 -= PLAYERSPEED;
-		PLAYER.move(PLAYERSPEED * 1.5, "right", PLAYERSPEED);
-	} else if (kb.pressing("left")) {
-    PLAYER.ani = "left";
-    FACING = "left";
-    x1 += PLAYERSPEED;
-    x2 += PLAYERSPEED;
-    PLAYER.move(PLAYERSPEED * 1.5, "left", PLAYERSPEED);
-  } else if (kb.pressing("up")) {
-    y1 += PLAYERSPEED;
-    y2 += PLAYERSPEED;
-    PLAYER.move(PLAYERSPEED * 1.5, "up", PLAYERSPEED);
-	} else if (kb.pressing("down")) {
-    PLAYER.move(PLAYERSPEED * 1.5, "down", PLAYERSPEED);
-    y1 -= PLAYERSPEED;
-    y2 -= PLAYERSPEED;
-	} else {
-    if (FACING === "right") {
-      PLAYER.ani = "PLAYERSTANDRIGHTIMG";
-    } else {
-      PLAYER.ani = "PLAYERSTANDLEFTIMG";
-    }
-  }
+  handleMovement();
   if (TIME <= 32) {
     let texttutorial = ["Fight against the shadow warriors who are plotting to attack the Sun.",
         "Be careful not to get near the shadows.", "Move around with WASD and dodge their necrotic attacks.", "Attack with your LMB and use abilities to defeat them.",
@@ -1200,7 +1503,7 @@ window.draw = () => {
   stroke(45, 45, 45);
   strokeWeight(2.5);
   textSize(windowWidth / 70);
-  text("Score: " + SCORE, windowWidth * 11 / 13, windowHeight / 20);
+  text("Score: " + SCORE.toLocaleString("en-US"), windowWidth * 11 / 13, windowHeight / 20);
   let minutes = Math.floor(TIME / 60);
   let extraSeconds = TIME % 60;
   minutes = minutes < 10 ? "0" + minutes : minutes;
@@ -1211,6 +1514,8 @@ window.draw = () => {
   text("Health: " + Math.ceil(PLAYERHEALTH) + "/" + PLAYERMAXHEALTH, windowWidth * 10 / 13, windowHeight * 2 / 15);
   textSize(windowWidth / 60);
   text("Level: " + Math.floor(LVL), windowWidth / 2, windowHeight / 11);
+  drawBossBar();
+  drawHitFlash();
   if (EARTHON) {
     for (let i = 1; i < EARTH.length + 1; i++) {
       let spacing = (i * 2 * Math.PI / EARTH.length);
@@ -1225,6 +1530,11 @@ window.draw = () => {
   }
   while (EXP.length > 200) {
     EXP[0].remove();
+  }
+  for (let i = 0; i < EXP.length; i++) {
+    if (dist(EXP[i].x, EXP[i].y, PLAYER.x, PLAYER.y) < MAGNETRADIUS) {
+      EXP[i].moveTowards(PLAYER, .18);
+    }
   }
   if (AIRON) {
     AIR.x = constrain(AIR.x, PLAYER.x - windowWidth / 2, PLAYER.x + windowWidth / 2);
@@ -1254,6 +1564,12 @@ window.draw = () => {
   }
   camera.x = PLAYER.x;
   camera.y = PLAYER.y;
+  if (SHAKE > 0) {
+    camera.x += (Math.random() - .5) * SHAKE;
+    camera.y += (Math.random() - .5) * SHAKE;
+    SHAKE -= 1;
+  }
+  updateSwing();
   if (FIREON && frameCount % 130 === 0) {
     for (let i = 0; i < FIRECT; i++) {
       let fireball = new FIRE.Sprite();
@@ -1301,7 +1617,9 @@ window.draw = () => {
     clearInterval(TIMERID);
     if (ENEMIES.length < 1) {
       let enemy = new BOSSENEMIES.Sprite(PLAYER.x + windowWidth / 2.5, PLAYER.y);
+      enemy.kind = "boss";
       enemy.life = TIME * 500;
+      BOSSMAXLIFE = enemy.life;
       BGMUSIC.stop();
       BOSSMUSIC.play();
       BOSSMUSIC.loop();

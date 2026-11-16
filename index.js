@@ -142,6 +142,15 @@ let DEFENSEIMG2;
 let SPEEDIMG2;
 let HEALTHIMG2;
 let KILLS = 0;
+let DASH = 0;
+let DASHCD = 0;
+let DASHDIR = 0;
+let INVULN = 0;
+let COMBO = 0;
+let COMBOTIMER = 0;
+let SINCEHIT = 0;
+const DASHFRAMES = 9;
+const DASHCOOLDOWN = 75;
 let PLAYER;
 let PLAYERHEALTH;
 let SCORE;
@@ -483,7 +492,37 @@ function drawOverlays() {
   }
 }
 
+function startDash() {
+  if (DASHCD > 0 || DASH > 0 || MODALOPEN || PAUSED) {
+    return;
+  }
+  // Dash the way you're moving, or toward the cursor if you're standing still.
+  let dx = (kb.pressing("right") ? 1 : 0) - (kb.pressing("left") ? 1 : 0);
+  let dy = (kb.pressing("down") ? 1 : 0) - (kb.pressing("up") ? 1 : 0);
+  DASHDIR = dx || dy ? Math.atan2(dy, dx) * 180 / Math.PI : aimAngle();
+  DASH = DASHFRAMES;
+  DASHCD = DASHCOOLDOWN;
+  PLAYER._destIdx++; // cancel any in-progress move() so it can't pull the dash back
+  INVULN = Math.max(INVULN, DASHFRAMES + 6);
+  burst(PLAYER.x, PLAYER.y, 10, [180, 230, 255], 3);
+}
+
 function handleMovement() {
+  if (DASHCD > 0) {
+    DASHCD -= 1;
+  }
+  if (DASH > 0) {
+    let rad = DASHDIR * Math.PI / 180;
+    PLAYER.vel.x = Math.cos(rad) * 15;
+    PLAYER.vel.y = Math.sin(rad) * 15;
+    burst(PLAYER.x, PLAYER.y, 2, [180, 230, 255], .5);
+    DASH -= 1;
+    if (DASH === 0) {
+      PLAYER.vel.x = 0;
+      PLAYER.vel.y = 0;
+    }
+    return;
+  }
   let dx = (kb.pressing("right") ? 1 : 0) - (kb.pressing("left") ? 1 : 0);
   let dy = (kb.pressing("down") ? 1 : 0) - (kb.pressing("up") ? 1 : 0);
   if (dx === 0 && dy === 0) {
@@ -545,6 +584,10 @@ function togglePause() {
 }
 
 window.keyPressed = () => {
+  if (key === " " || keyCode === SHIFT) {
+    startDash();
+    return false;
+  }
   let again = document.querySelector(".death-again");
   if (again && keyCode === ENTER && document.activeElement.tagName !== "INPUT") {
     again.click();
@@ -646,13 +689,38 @@ function drawHUD() {
   let [px, py] = toScreen(PLAYER.x, PLAYER.y);
   bar(px - 18, py + 28, 36, 5, PLAYERHEALTH / PLAYERMAXHEALTH, [220, 70, 80]);
   drawPowers();
+  // Dash meter, bottom left
+  let ready = DASHCD === 0;
+  let cx = pad + 22;
+  let cy = windowHeight - pad - 42;
+  noStroke();
+  fill(0, 0, 0, 150);
+  circle(cx, cy, 44);
+  noFill();
+  stroke(ready ? color(180, 230, 255) : color(255, 255, 255, 90));
+  strokeWeight(4);
+  arc(cx, cy, 36, 36, -HALF_PI, -HALF_PI + TWO_PI * (1 - DASHCD / DASHCOOLDOWN));
+  noStroke();
+  fill(255, 255, 255, ready ? 255 : 140);
+  textStyle(BOLD);
+  textSize(10);
+  textAlign(CENTER, CENTER);
+  text("DASH", cx, cy);
+  // Combo, under the score
+  if (COMBO >= 3) {
+    textAlign(RIGHT, TOP);
+    textSize(14);
+    fill(255, 214, 84);
+    text(COMBO + " combo  x" + comboMult().toFixed(1), windowWidth - pad, pad + 42);
+    bar(windowWidth - pad - 110, pad + 62, 110, 4, COMBOTIMER / 150, [255, 214, 84]);
+  }
   // Control reminder for the first stretch of the first run
   if (FIRSTRUN && TIME < 20) {
     textStyle(NORMAL);
     textSize(12);
     textAlign(LEFT, BOTTOM);
     fill(255, 255, 255, 170);
-    text("WASD move   ·   Click or hold to attack   ·   P pause", pad, windowHeight - pad);
+    text("WASD move   ·   Click or hold to attack   ·   Space to dash   ·   P pause", pad + 56, windowHeight - pad - 36);
   }
   pop();
 }
@@ -762,7 +830,7 @@ function showMenu() {
   MENU.html(
     '<div style="font-size:' + windowWidth / 18 + 'px;font-weight:700;letter-spacing:2px;color:#FFD654;text-shadow:0 0 24px rgba(255,180,0,.6)">CELESTIAL NINJA</div>' +
     '<div style="font-size:' + windowWidth / 70 + 'px;max-width:46ch;opacity:.9">Bend the elements and defend the Sun from shadow warriors that grow stronger every minute.</div>' +
-    '<div style="font-size:' + windowWidth / 90 + 'px;opacity:.75;line-height:1.8">WASD to move &nbsp;·&nbsp; Click or hold to attack &nbsp;·&nbsp; P or Esc to pause</div>' +
+    '<div style="font-size:' + windowWidth / 90 + 'px;opacity:.75;line-height:1.8">WASD to move &nbsp;·&nbsp; Click or hold to attack &nbsp;·&nbsp; Space to dash &nbsp;·&nbsp; P or Esc to pause</div>' +
     (best > 0 ? '<div style="font-size:' + windowWidth / 80 + 'px;color:#FFD654">Your best: ' + best.toLocaleString("en-US") + '</div>' : "")
   );
   let play = createButton("Play");
@@ -847,6 +915,12 @@ function resetStats() {
   PLAYERMAXHEALTH = 100;
   SCORE = 0;
   KILLS = 0;
+  DASH = 0;
+  DASHCD = 0;
+  INVULN = 0;
+  COMBO = 0;
+  COMBOTIMER = 0;
+  SINCEHIT = 0;
   EXPPOINTS = 10;
   LVL = 1;
   TIME = 1;
@@ -1137,12 +1211,19 @@ function hpCollect(PLAYER, health) {
 }
 
 function damagePlayer(PLAYER) {
+  if (INVULN > 0) {
+    return;
+  }
   PLAYERHEALTH -= RESISTANCE * TIME / 1000;
   fill(255, 0, 0, 25);
   rect(0, 0, windowWidth, windowHeight);
 }
 
 function damagePlayerOrb(shadoworb) {
+  if (INVULN > 0) {
+    shadoworb.remove();
+    return;
+  }
   PLAYERHEALTH -= RESISTANCE * TIME / 100;
   shadoworb.remove();
   fill(255, 0, 0, 25);
@@ -1150,6 +1231,10 @@ function damagePlayerOrb(shadoworb) {
 }
 
 function damagePlayerCharge(charge) {
+  if (INVULN > 0) {
+    return;
+  }
+  INVULN = 40;
   SHAKE = 18;
   PLAYERHEALTH -= RESISTANCE * Math.pow(TIME / 200, TIME / 450);
   fill(255, 0, 0, 100);
@@ -1164,6 +1249,13 @@ function orbToEnemy(weapon, enemy) {
 
 function swordToEnemy(weapon, enemy) {
   burst(enemy.x, enemy.y, 6, [255, 230, 120], 3);
+  if (enemy.kind !== "boss") {
+    // Knock the shadow back away from you so hits feel solid.
+    let a = Math.atan2(enemy.y - PLAYER.y, enemy.x - PLAYER.x);
+    let push = 22 / (+enemy.scale || 1);
+    enemy.x += Math.cos(a) * push;
+    enemy.y += Math.sin(a) * push;
+  }
   enemy.life -= SWORDDAMAGE;
   enemyDeadUpdate(enemy);
 }
@@ -1256,6 +1348,11 @@ function bombToEnemy(weapon, enemy) {
   enemyDeadUpdate(enemy);
 }
 
+function comboMult() {
+  // Every 10 kills in a row adds x0.5, up to x3. The chain breaks after 2.5 seconds without a kill.
+  return Math.min(3, 1 + Math.floor(COMBO / 10) * .5);
+}
+
 function enemyDeadUpdate(enemy) {
   if (enemy.life <= 0) {
     if (enemy.kind === "boss") {
@@ -1297,7 +1394,9 @@ function enemyDeadUpdate(enemy) {
     if (Math.random() * 1000 > 998.25) {
       new HEALTHS.Sprite(enemy.x + 10, enemy.y - 10);
     }
-    let gained = Math.ceil(500 * TIME / windowWidth) * (enemy.elite ? 10 : enemy.kind === "brute" ? 3 : 1);
+    COMBO += 1;
+    COMBOTIMER = 150;
+    let gained = Math.ceil(Math.ceil(500 * TIME / windowWidth) * (enemy.elite ? 10 : enemy.kind === "brute" ? 3 : 1) * comboMult());
     burst(enemy.x, enemy.y, enemy.kind === "boss" ? 60 : 10, [40, 20, 60], enemy.kind === "boss" ? 9 : 4);
     popup(enemy.x, enemy.y - 20, "+" + gained);
     if (enemy.kind === "boss") {
@@ -1565,7 +1664,7 @@ function explodeBomber(enemy, hurtPlayer) {
   burst(enemy.x, enemy.y, 30, [255, 140, 30], 6);
   burst(enemy.x, enemy.y, 12, [255, 240, 160], 3);
   SHAKE = Math.max(SHAKE, 10);
-  if (hurtPlayer && dist(enemy.x, enemy.y, PLAYER.x, PLAYER.y) < 95) {
+  if (hurtPlayer && INVULN === 0 && dist(enemy.x, enemy.y, PLAYER.x, PLAYER.y) < 95) {
     PLAYERHEALTH -= RESISTANCE * (8 + TIME / 25);
   }
   // A blast also hurts other shadows, so popping one in a crowd can chain.
@@ -1628,6 +1727,16 @@ function drawEnemyOutlines() {
   }
   pop();
   push();
+  if (BOSSSTART && BOSSENEMIES.length > 0 && frameCount % 300 < 50) {
+    let [bx, by] = toScreen(BOSSENEMIES[0].x, BOSSENEMIES[0].y);
+    let [tx, ty] = toScreen(PLAYEROLDX, PLAYEROLDY);
+    let a = Math.atan2(ty - by, tx - bx);
+    let len = Math.max(windowWidth, windowHeight);
+    stroke(255, 40, 40, 90 + 90 * Math.abs(Math.sin(frameCount / 4)));
+    strokeWeight(40);
+    line(bx, by, bx + Math.cos(a) * len, by + Math.sin(a) * len);
+    noStroke();
+  }
   for (let e of ENEMIES) {
     if (e.kind === "bomber" && e.fuse !== undefined) {
       let [sx, sy] = toScreen(e.x, e.y);
@@ -1751,7 +1860,15 @@ function drawSwordTrail() {
     let a0 = SWORDTRAIL[i - 1] * Math.PI / 180;
     let a1 = SWORDTRAIL[i] * Math.PI / 180;
     fill(255, 210, 90, 25 + i * 18);
-    arc(0, 0, SWORDLEN * 2.1, SWORDLEN * 2.1, Math.min(a0, a1), Math.max(a0, a1) + .02, PIE);
+    // Hand-drawn wedge. p5's arc() drew a stray line at angle 0 for some angle pairs.
+    let r = SWORDLEN * 1.05;
+    beginShape();
+    vertex(0, 0);
+    for (let k = 0; k <= 4; k++) {
+      let t = a0 + (a1 - a0) * k / 4;
+      vertex(Math.cos(t) * r, Math.sin(t) * r);
+    }
+    endShape(CLOSE);
   }
   pop();
   if (!SWING) {
@@ -1801,8 +1918,24 @@ window.draw = () => {
   }
   if (PLAYERHEALTH < PREVHEALTH - .05) {
     HITFLASH = 14;
+    SINCEHIT = 0;
+  }
+  SINCEHIT += 1;
+  // Slow regen after 4 seconds without taking damage, so one bad moment isn't fatal.
+  if (SINCEHIT > 240 && PLAYERHEALTH > 0 && PLAYERHEALTH < PLAYERMAXHEALTH) {
+    PLAYERHEALTH = Math.min(PLAYERMAXHEALTH, PLAYERHEALTH + PLAYERMAXHEALTH / 3000);
   }
   PREVHEALTH = PLAYERHEALTH;
+  if (INVULN > 0) {
+    INVULN -= 1;
+  }
+  PLAYER.visible = INVULN === 0 || DASH > 0 || frameCount % 6 < 3;
+  if (COMBOTIMER > 0) {
+    COMBOTIMER -= 1;
+    if (COMBOTIMER === 0) {
+      COMBO = 0;
+    }
+  }
   if (mouseIsPressed && frameCount % 18 === 0) {
     // if (!mousePressed()) {
     attackMouse();
@@ -1906,7 +2039,7 @@ window.draw = () => {
   }
   handleMovement();
   if (FIRSTRUN && WEAPONCHOSEN && TIME <= 12) {
-    let hints = ["WASD to move. Hold left click to attack toward your cursor.",
+    let hints = ["WASD to move. Hold left click to attack. Space to dash through danger.",
       "Shadows drop sun souls. Grab them to level up and pick new powers.",
       "Survive 5 minutes and defeat the Shadow Lord to save the Sun."];
     let hint = hints[Math.min(hints.length - 1, Math.floor(TIME / 4))];
@@ -1990,13 +2123,14 @@ window.draw = () => {
     }
     BOSSENEMIES[0].x = constrain(BOSSENEMIES[0].x, PLAYER.x - windowWidth / 2, PLAYER.x + windowWidth / 2);
     BOSSENEMIES[0].y = constrain(BOSSENEMIES[0].y, PLAYER.y - windowHeight / 2, PLAYER.y + windowHeight / 2);
-    if (frameCount % 120 === 0) {
+    if (frameCount % 300 === 0) {
       PLAYEROLDX = PLAYER.x;
       PLAYEROLDY = PLAYER.y;
     }
     BOSSENEMIES[0].moveTowards(PLAYEROLDX, PLAYEROLDY);
-    if (frameCount % 300 < 15) {
-      BOSSENEMIES[0].speed = 1.5;
+    if (frameCount % 300 < 50) {
+      // Wind up before the charge. The red line in drawEnemyOutlines shows where it's going.
+      BOSSENEMIES[0].speed = .5;
     } else {
       BOSSENEMIES[0].speed = 12 + TIME / 250;
     }

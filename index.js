@@ -684,6 +684,10 @@ function drawPowers() {
 }
 
 function drawHUD() {
+  if (MENU) {
+    // The title screen covers the game, so keep the HUD out from behind it.
+    return;
+  }
   push();
   textFont("Helvetica");
   let pad = 20;
@@ -848,6 +852,7 @@ function showMenu() {
   noLoop();
   clearInterval(TIMERID);
   PAUSE.attribute("disabled", "");
+  PAUSE.hide();
   MENU = createDiv("");
   MENU.style("position", "fixed");
   MENU.style("inset", "0");
@@ -888,6 +893,7 @@ function startGame() {
     MENU = null;
   }
   MODALOPEN = false;
+  PAUSE.show();
   PAUSE.removeAttribute("disabled");
   backgroundmusic();
   startTime();
